@@ -22,27 +22,39 @@ SAME_AS_LATIN = {"А": "A", "В": "B", "Е": "E", "К": "K", "М": "M", "Н": "H
 SAME_AS_LATIN_SPRITE = {**SAME_AS_LATIN, "З": "3"}
 # Letters we had to draw, and the donor sprites used for them — BY sprite NAME.
 #
-# The donors are chosen so they appear in none of the five sprite captions
-# in ANY of the game's languages, and are needed by no one else:
-#   • G J Q W Z — English does not need them in these captions;
-#   • ! (Exclamation) — verified: appears in no language;
-#   • ? (Interrogation) — not wired to the SpriteFont at all, zero references in the whole game.
+# ⚠️ WHAT MUST NOT BE TAKEN (verified by a full sweep of all 235 bundles):
 #
-# THE DIGITS MUST NOT BE TOUCHED. The same sprite font draws the numbers on the tactical map:
-# ExitZoneView (timer), LimitedDurationRoomsView (turns remaining),
-# DelayedVehicleInvocation (turns until the vehicle arrives). Taking '0' or '1' for a letter
-# means showing the player «П» instead of «0».
+#   DIGITS 0-9 — they draw the numbers on the tactical map:
+#       ExitZoneView (timer), LimitedDurationRoomsView (turns remaining),
+#       DelayedVehicleInvocation (turns until the vehicle arrives).
+#
+#   THE ! SIGN — is in the «WARNING!» / «ВНИМАНИЕ!» caption. It is drawn with sprites through
+#       a different binding: LocalizeStringTarget + StringTargetSpriteText (not LocalizeSpriteText).
+#
+#   THE LETTERS A C D E F G I L M N O P R S T U V W Y — are needed by the English captions:
+#       PLACE UNITS · PLAYER TURN · ENEMY TURN · VICTORY · DEFEAT · WARNING!
+#       (W and G — precisely from WARNING; they are easy to step on.)
+#
+#   THE LETTERS B H K X and the digit 3 — are referenced by Cyrillic (В Н К Х З).
+#
+# FREE: J Q Z (do not appear in the sprite captions in any language),
+#   ui_fontBigInterrogation (the «?» sign — not wired to the SpriteFont at all, 0 references),
+#   selector1..3 (31×31, 0 references in the whole game — each is given a copy of a letter's
+#   geometry, and its rectangle is relocated to free space in the atlas).
 SPRITE_DONORS = {
-    "Б": "ui_fontBigG",
-    "Г": "ui_fontBigJ",
-    "Д": "ui_fontBigQ",
-    "Ж": "ui_fontBigW",
-    "И": "ui_fontBigZ",
-    "Л": "ui_fontBigExclamation",
-    "П": "ui_fontBigInterrogation",
+    "Б": "ui_fontBigJ",
+    "Г": "ui_fontBigQ",
+    "Д": "ui_fontBigZ",
+    "Ж": "ui_fontBigInterrogation",
+    "И": "selector1",
+    "Л": "selector2",
+    "П": "selector3",
 }
-# Ц and Й are drawn (see font/sprite_banner_25x25.json), but no donors are left for them.
-# If they are ever needed, a donor will have to be freed by changing a caption's text.
+# Donors whose geometry must be REMADE to fit a 25×25 letter (they are not from the font).
+REGEOM = {"selector1", "selector2", "selector3"}
+GEOM_SOURCE = "ui_fontBigA"      # the reference geometry of a letter
+
+# Ц and Й are drawn (see font/sprite_banner_25x25.json), but are not used in the captions.
 
 # Two service localization strings
 LANG_NAME_ID = "240000458967474176"      # the language name in the list ("English" -> "Русский")

@@ -153,14 +153,45 @@ def build_tmp_font():
 
 # ──────────────────────── 3. sprite font ────────────────────────
 def build_sprite_font():
-    """Cyrillic in the banner font: ХОД ИГРОКА, ПОБЕДА, ПОРАЖЕНИЕ, etc."""
+    """Cyrillic in the banner font: ХОД ИГРОКА, ПОБЕДА, ПОРАЖЕНИЕ, ВНИМАНИЕ!, etc.
+
+    There are not enough donor letters in the font (see the bans in paths.py), so three letters
+    take over UNUSED sprites (selector1..3): each is given a copy of a letter's geometry,
+    and its rectangle is relocated to free space in the atlas.
+    """
     cyr = json.load(open(os.path.join(paths.ROOT, "font", "sprite_banner_25x25.json")))["letters"]
 
     env, fobj, font, tobj, by_char, by_name = spritefont.open_ui(paths.backup(paths.UI_BUNDLE))
+    objs = {o.path_id: o for o in env.objects}
+    sa_obj = next(o for o in env.objects if o.type.name == "SpriteAtlas")
+    sa = sa_obj.read_typetree()
     tex = tobj.read()
     atlas = np.array(tex.image)
-    H = atlas.shape[0]
+    H, W = atlas.shape[:2]
 
+    # the reference geometry of a letter
+    src_pid = by_name[paths.GEOM_SOURCE][0]
+    geom = objs[src_pid].read_typetree()
+
+    # key -> atlas entry map, and the reference entry
+    rdm = {str(k): (k, v) for k, v in sa["m_RenderDataMap"]}
+    src_key = str(objs[src_pid].read_typetree()["m_RenderDataKey"])
+    src_entry = rdm[src_key][1]
+
+    # free cells in the atlas texture
+    occ = np.zeros((H, W), bool)
+    for _, v in sa["m_RenderDataMap"]:
+        r = v["textureRect"]
+        x, y, w, h = int(r["x"]), int(r["y"]), int(r["width"]), int(r["height"])
+        occ[max(0, H - y - h - 2):H - y + 2, max(0, x - 2):x + w + 2] = True
+    free = []
+    for y in range(0, H - 29, 4):
+        for x in range(0, W - 29, 4):
+            if not occ[y:y + 29, x:x + 29].any():
+                free.append((x + 2, H - y - 27))          # Unity coordinates: bottom-up
+                occ[y:y + 29, x:x + 29] = True
+
+    regeom = 0
     for letter, donor in paths.SPRITE_DONORS.items():
         rows = cyr.get(letter)
         if not rows:
@@ -169,8 +200,34 @@ def build_sprite_font():
             sys.exit(f"✗ no donor sprite {donor}")
         fill = np.array([[c == "#" for c in r.ljust(25, ".")[:25]] for r in rows[:25]], bool)
         img = spritefont.render(fill)
-        _, x, y, w, h = by_name[donor]
-        atlas[H - y - h:H - y, x:x + w] = img          # repaint the donor sprite
+        pid, x, y, w, h = by_name[donor]
+
+        if donor in paths.REGEOM:
+            # a sprite not from the font: copy the letter's geometry, keeping its own name and key
+            if not free:
+                sys.exit("✗ the atlas ran out of free space")
+            nx, ny = free.pop(0)
+            d = objs[pid].read_typetree()
+            key, name = d["m_RenderDataKey"], d["m_Name"]
+            new = json.loads(json.dumps(geom, default=lambda o: o.hex()))
+            d2 = objs[src_pid].read_typetree()          # a fresh copy with the bytes
+            d2["m_Name"] = name
+            d2["m_RenderDataKey"] = key
+            objs[pid].save_typetree(d2)
+            # the rectangle in the atlas -> the new place
+            e = json.loads(json.dumps(src_entry, default=str))
+            entry = rdm[str(key)][1]
+            entry["textureRect"] = {"x": float(nx), "y": float(ny), "width": 25.0, "height": 25.0}
+            entry["textureRectOffset"] = dict(src_entry["textureRectOffset"])
+            entry["uvTransform"] = dict(src_entry["uvTransform"])
+            entry["settingsRaw"] = src_entry["settingsRaw"]
+            entry["downscaleMultiplier"] = src_entry["downscaleMultiplier"]
+            x, y, w, h = nx, ny, 25, 25
+            regeom += 1
+
+        atlas[H - y - h:H - y, x:x + w] = img
+
+    sa_obj.save_typetree(sa)
 
     pairs = font["_sprites"]["_pairs"]
     have = {p["_key"] for p in pairs}
@@ -189,7 +246,7 @@ def build_sprite_font():
     with open(paths.build(paths.UI_BUNDLE), "wb") as f:
         f.write(env.file.save(packer="original"))
     print(f"  ✓ sprite font: reused {len(paths.SAME_AS_LATIN_SPRITE)}, "
-          f"drawn {len(paths.SPRITE_DONORS)}")
+          f"drawn {len(paths.SPRITE_DONORS)} (of which {regeom} on unused sprites)")
 
 
 if __name__ == "__main__":
