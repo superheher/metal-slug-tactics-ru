@@ -23,7 +23,26 @@ Metal Slug is an arcade shooter: brisk, soldierly, comic in places. The texts ar
 - UI — dry and short (space on buttons is limited).
 - Dialogue — living speech, no bureaucratese. The characters joke and bicker.
 - Ability descriptions — telegraphic, like a reference: «Наносит X урона. Накладывает Y на 2 хода.»
-- Addressing the player — «вы» in the UI; in dialogue, as is usual between comrades-in-arms («ты»).
+
+### Formal or informal — a table, not «as is usual»
+
+Previously there was a vague «in dialogue — as between comrades-in-arms» here, and translators
+understood it differently: the commander was addressed sometimes with «ты», sometimes with «вы».
+Now unambiguously:
+
+| who to whom | how |
+|---|---|
+| UI, tutorials → player | **вы** |
+| soldiers → the commander (placeholders `{Leader.Title}`, `{Leader.FirstName}`, `{Leader.LastName}`) | **вы** |
+| soldiers → Margaret Southwood (Commander Southwood, senior in rank) | **вы** |
+| soldiers among themselves | **ты** |
+| to enemies (Morden, Abbas, Paqar) | **ты** |
+
+`{Leader.*}` is the **player**. Margaret Southwood is a **separate character**, Trevor's mentor;
+do not confuse them, even though both are called «командир».
+
+**«командир» as a form of address is written lowercase** — in Russian it is a word, not a title.
+`Commander` capitalized in the original is a norm of English, not a reason to copy it.
 
 ## 2. HEROES (Metal Slug canon, transliteration)
 
@@ -149,3 +168,26 @@ are translated by meaning, keeping the name: «Урон Аббаса», «Сти
 - Do not «improve» the markup: the number of tags in and out must match.
 - Do not add a period at the end if there is none in the original (and vice versa).
 - Do not turn short UI labels into long phrases — space is limited.
+
+## 8. TRAPS: identical English ≠ identical Russian
+
+There are strings where **one English word means different things**, and unifying them into a
+single translation is a mistake. The automatic «one EN → one RU» check complains about them, and
+complains in vain.
+
+| EN | where | RU | why |
+|---|---|---|---|
+| `Credits` | Keywords | **Кредиты** | a between-runs currency («Credits are a currency gained at the end of each campaign») |
+| `Credits` | UI | **Авторы** | the credits screen |
+
+There are **two** currencies in the game: `Coins` — Монеты (spent at the outpost within a run) and
+`Credits` — Кредиты (given at the end of a campaign). Do not confuse or merge them.
+
+**Rule:** before unifying two translations of one English word into one — look at which tables they
+come from and what text is next to them. Matching words do not mean matching meaning.
+
+### The flip side: inflection is not inconsistency
+
+`{Abilities.Bot:боты}` / `{Abilities.Bot:ботов}` / `{Abilities.Bot:ботами}` — this is **correct**.
+English makes do with the single form `bots`, Russian must inflect by phrase. Labels inside
+placeholders inflect freely; what must stay unchanged is the **stem**, not the ending.
