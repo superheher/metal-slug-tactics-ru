@@ -156,7 +156,7 @@ def build_sprite_font():
     """Cyrillic in the banner font: ХОД ИГРОКА, ПОБЕДА, ПОРАЖЕНИЕ, etc."""
     cyr = json.load(open(os.path.join(paths.ROOT, "font", "sprite_banner_25x25.json")))["letters"]
 
-    env, fobj, font, tobj, rects = spritefont.open_ui(paths.backup(paths.UI_BUNDLE))
+    env, fobj, font, tobj, by_char, by_name = spritefont.open_ui(paths.backup(paths.UI_BUNDLE))
     tex = tobj.read()
     atlas = np.array(tex.image)
     H = atlas.shape[0]
@@ -165,15 +165,18 @@ def build_sprite_font():
         rows = cyr.get(letter)
         if not rows:
             sys.exit(f"✗ no shape for the letter {letter}")
+        if donor not in by_name:
+            sys.exit(f"✗ no donor sprite {donor}")
         fill = np.array([[c == "#" for c in r.ljust(25, ".")[:25]] for r in rows[:25]], bool)
         img = spritefont.render(fill)
-        _, x, y, w, h = rects[donor]
+        _, x, y, w, h = by_name[donor]
         atlas[H - y - h:H - y, x:x + w] = img          # repaint the donor sprite
 
     pairs = font["_sprites"]["_pairs"]
     have = {p["_key"] for p in pairs}
-    for cyr_c, lat_c in {**paths.SAME_AS_LATIN_SPRITE, **paths.SPRITE_DONORS}.items():
-        pid = rects[lat_c][0]
+    mapping = {c: by_char[l][0] for c, l in paths.SAME_AS_LATIN_SPRITE.items()}
+    mapping.update({c: by_name[d][0] for c, d in paths.SPRITE_DONORS.items()})
+    for cyr_c, pid in mapping.items():
         for u in (ord(cyr_c), ord(cyr_c.lower())):
             if u not in have:
                 pairs.append({"_key": u, "_value": {"m_FileID": 0, "m_PathID": pid}})

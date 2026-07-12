@@ -91,15 +91,31 @@ def open_ui(bundle_path):
     font_obj = objs[FONT_PID]
     font = font_obj.read_typetree()
 
-    rects = {}
+    # ALL atlas sprites by name — the '?' donor is not wired into the SpriteFont table,
+    # but it exists as an object, and it can be referenced.
+    by_name = {}
+    for o in env.objects:
+        if o.type.name != "Sprite":
+            continue
+        try:
+            s = o.read_typetree()
+        except Exception:
+            continue
+        r = key2rect.get(str(s["m_RenderDataKey"]))
+        if r:
+            by_name[s.get("m_Name", "")] = (
+                o.path_id, int(r["x"]), int(r["y"]), int(r["width"]), int(r["height"]))
+
+    # and the ones in the table — by character
+    by_char = {}
     for pair in font["_sprites"]["_pairs"]:
         s = objs[pair["_value"]["m_PathID"]].read_typetree()
         r = key2rect[str(s["m_RenderDataKey"])]
-        rects[chr(pair["_key"])] = (
+        by_char[chr(pair["_key"])] = (
             pair["_value"]["m_PathID"],
-            int(r["x"]), int(r["y"]), int(r["width"]), int(r["height"]),
-        )
-    return env, font_obj, font, tex_obj, rects
+            int(r["x"]), int(r["y"]), int(r["width"]), int(r["height"]))
+
+    return env, font_obj, font, tex_obj, by_char, by_name
 
 
 def grab(atlas_arr, rect, height):

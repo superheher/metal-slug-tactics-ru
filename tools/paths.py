@@ -20,10 +20,29 @@ SAME_AS_LATIN = {"А": "A", "В": "B", "Е": "E", "К": "K", "М": "M", "Н": "H
                  "О": "O", "Р": "P", "С": "C", "Т": "T", "Х": "X"}
 # The sprite font adds З as well — in this typeface it is indistinguishable from the digit 3.
 SAME_AS_LATIN_SPRITE = {**SAME_AS_LATIN, "З": "3"}
-# Letters we had to draw, and the donor sprites used for them.
-# The donors are chosen so they appear in NONE of the five sprite captions
-# in any of the game's languages — so English does not suffer from the swap.
-SPRITE_DONORS = {"Б": "G", "Г": "J", "Д": "Q", "Ж": "W", "И": "Z", "Й": "!", "П": "0", "Ц": "1"}
+# Letters we had to draw, and the donor sprites used for them — BY sprite NAME.
+#
+# The donors are chosen so they appear in none of the five sprite captions
+# in ANY of the game's languages, and are needed by no one else:
+#   • G J Q W Z — English does not need them in these captions;
+#   • ! (Exclamation) — verified: appears in no language;
+#   • ? (Interrogation) — not wired to the SpriteFont at all, zero references in the whole game.
+#
+# THE DIGITS MUST NOT BE TOUCHED. The same sprite font draws the numbers on the tactical map:
+# ExitZoneView (timer), LimitedDurationRoomsView (turns remaining),
+# DelayedVehicleInvocation (turns until the vehicle arrives). Taking '0' or '1' for a letter
+# means showing the player «П» instead of «0».
+SPRITE_DONORS = {
+    "Б": "ui_fontBigG",
+    "Г": "ui_fontBigJ",
+    "Д": "ui_fontBigQ",
+    "Ж": "ui_fontBigW",
+    "И": "ui_fontBigZ",
+    "Л": "ui_fontBigExclamation",
+    "П": "ui_fontBigInterrogation",
+}
+# Ц and Й are drawn (see font/sprite_banner_25x25.json), but no donors are left for them.
+# If they are ever needed, a donor will have to be freed by changing a caption's text.
 
 # Two service localization strings
 LANG_NAME_ID = "240000458967474176"      # the language name in the list ("English" -> "Русский")
