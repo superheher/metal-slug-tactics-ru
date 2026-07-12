@@ -1,0 +1,11 @@
+# The game's assets and everything derived from them are not committed to the repo.
+# They belong to SNK / Dotemu / Leikir Studio, weigh 90+ MB and go stale
+# at the very first game update. All of it is rebuilt from your copy
+# with a single command: ./install.sh
+backup/
+build/
+
+# environment
+.venv/
+__pycache__/
+*.pyc

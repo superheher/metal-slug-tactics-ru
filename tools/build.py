@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+"""Builds three bundles from the game's ORIGINALS (backup/) and our sources.
+
+  1. localization-...pt-br...bundle  — Russian text instead of Portuguese
+  2. fonts_assets_all.bundle         — Cyrillic in the metal-slug TMP font
+  3. ui_assets_all.bundle            — Cyrillic in the sprite banner font
+
+The results go into build/. The game's originals are not modified.
+"""
+import json
+import os
+import sys
+
+import numpy as np
+from PIL import Image
+import UnityPy
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import paths
+import spritefont
+
+
+# ─────────────────────────────── 1. text ───────────────────────────────
+def build_translation():
+    ru = json.load(open(os.path.join(paths.ROOT, "translation", "ru.json")))
+    ru[paths.LANG_NAME_ID] = "Русский"      # this is how the language is labelled in the list
+    ru[paths.SYSTEM_TPL_ID] = "{Locale}"    # drop the «Системный (...)» wrapper
+
+    tables = json.load(open(paths.build("en_strings.json")))["tables"]
+    want = {name.replace("_en-US", ""): {str(i) for i in rows} for name, rows in tables.items()}
+
+    env = UnityPy.load(paths.backup(paths.PT_BUNDLE))
+    replaced = added = 0
+    for obj in env.objects:
+        if obj.type.name != "MonoBehaviour":
+            continue
+        try:
+            t = obj.read_typetree()
+        except Exception:
+            continue
+        if "m_TableData" not in t:
+            continue
+
+        base = t.get("m_Name", "").replace("_pt-BR", "")
+        have = set()
+        for e in t["m_TableData"]:
+            i = str(e["m_Id"])
+            have.add(i)
+            if i in ru:
+                e["m_Localized"] = ru[i]
+                replaced += 1
+        # the Portuguese table is shorter than the English one — append the missing strings
+        for i in sorted(want.get(base, set()) - have):
+            if i in ru:
+                t["m_TableData"].append(
+                    {"m_Id": int(i), "m_Localized": ru[i], "m_Metadata": {"m_Items": []}})
+                added += 1
+        obj.save_typetree(t)
+
+    with open(paths.build(paths.PT_BUNDLE), "wb") as f:
+        f.write(env.file.save(packer="original"))
+    print(f"  ✓ text: replaced {replaced}, added {added}")
+
+
+# ──────────────────────────── 2. TMP font ────────────────────────────
+def build_tmp_font():
+    """Cyrillic in the metal-slug SDF — it renders headings such as «Синхро» in the tables."""
+    glyphs = json.load(open(os.path.join(paths.ROOT, "font", "tmp_metalslug_7x7.json")))["letters"]
+    SCALE, SIZE = 11, 7
+
+    env = UnityPy.load(paths.backup(paths.FONTS_BUNDLE))
+    fobj = tree = None
+    for obj in env.objects:
+        if obj.type.name != "MonoBehaviour":
+            continue
+        try:
+            d = obj.read_typetree()
+        except Exception:
+            continue
+        if d.get("m_Name") == "metal-slug SDF - Regular":
+            fobj, tree = obj, d
+            break
+
+    pid = tree["m_AtlasTextures"][0]["m_PathID"]
+    tobj = next(o for o in env.objects if o.type.name == "Texture2D" and o.path_id == pid)
+    tex = tobj.read()
+    arr = np.array(tex.image)
+    W, H = tree["m_AtlasWidth"], tree["m_AtlasHeight"]
+    PAD = tree["m_AtlasPadding"]
+
+    ch = {c["m_Unicode"]: c["m_GlyphIndex"] for c in tree["m_CharacterTable"]}
+    gl = {g["m_Index"]: g for g in tree["m_GlyphTable"]}
+    tpl = gl[ch[ord("H")]]                      # metrics reference
+
+    occ = np.zeros((H, W), bool)
+    for g in tree["m_GlyphTable"]:
+        r = g["m_GlyphRect"]
+        occ[max(0, r["m_Y"] - PAD):min(H, r["m_Y"] + r["m_Height"] + PAD),
+            max(0, r["m_X"] - PAD):min(W, r["m_X"] + r["m_Width"] + PAD)] = True
+    cell = SIZE * SCALE + 2 * PAD
+    free = []
+    for y in range(0, H - cell, 8):
+        for x in range(0, W - cell, 8):
+            if not occ[y:y + cell, x:x + cell].any():
+                free.append((x + PAD, y + PAD))
+                occ[y:y + cell, x:x + cell] = True
+
+    idx = max(g["m_Index"] for g in tree["m_GlyphTable"]) + 1
+    reused = drawn = 0
+
+    for cyr, lat in paths.SAME_AS_LATIN.items():      # 11 letters — without a single pixel
+        gi = ch[ord(lat)]
+        for u in (ord(cyr), ord(cyr.lower())):
+            if u not in ch:
+                tree["m_CharacterTable"].append(
+                    {"m_ElementType": 1, "m_Unicode": u, "m_GlyphIndex": gi, "m_Scale": 1.0})
+        reused += 1
+
+    for letter, rows in glyphs.items():
+        if letter in paths.SAME_AS_LATIN:
+            continue
+        if not free:
+            sys.exit("✗ the font atlas ran out of space")
+        gx, gy = free.pop(0)
+        bmp = np.zeros((SIZE, SIZE), np.uint8)
+        for r, line in enumerate(rows):
+            for c, v in enumerate(line[:SIZE]):
+                if v == "#":
+                    bmp[r, c] = 255
+        big = np.kron(bmp, np.ones((SCALE, SCALE), np.uint8))
+        gh, gw = big.shape
+        arr[H - gy - gh:H - gy, gx:gx + gw, 3] = big          # data in alpha, atlas bottom-up
+
+        g = json.loads(json.dumps(tpl))
+        g["m_Index"] = idx
+        g["m_GlyphRect"] = {"m_X": gx, "m_Y": gy, "m_Width": gw, "m_Height": gh}
+        tree["m_GlyphTable"].append(g)
+        for u in (ord(letter), ord(letter.lower())):
+            if u not in ch:
+                tree["m_CharacterTable"].append(
+                    {"m_ElementType": 1, "m_Unicode": u, "m_GlyphIndex": idx, "m_Scale": 1.0})
+        idx += 1
+        drawn += 1
+
+    tree["m_CharacterTable"].sort(key=lambda c: c["m_Unicode"])
+    fobj.save_typetree(tree)
+    tex.image = Image.fromarray(arr, "RGBA")
+    tex.save()
+    with open(paths.build(paths.FONTS_BUNDLE), "wb") as f:
+        f.write(env.file.save(packer="original"))
+    print(f"  ✓ TMP font: reused {reused}, drawn {drawn}")
+
+
+# ──────────────────────── 3. sprite font ────────────────────────
+def build_sprite_font():
+    """Cyrillic in the banner font: ХОД ИГРОКА, ПОБЕДА, ПОРАЖЕНИЕ, etc."""
+    cyr = json.load(open(os.path.join(paths.ROOT, "font", "sprite_banner_25x25.json")))["letters"]
+
+    env, fobj, font, tobj, rects = spritefont.open_ui(paths.backup(paths.UI_BUNDLE))
+    tex = tobj.read()
+    atlas = np.array(tex.image)
+    H = atlas.shape[0]
+
+    for letter, donor in paths.SPRITE_DONORS.items():
+        rows = cyr.get(letter)
+        if not rows:
+            sys.exit(f"✗ no shape for the letter {letter}")
+        fill = np.array([[c == "#" for c in r.ljust(25, ".")[:25]] for r in rows[:25]], bool)
+        img = spritefont.render(fill)
+        _, x, y, w, h = rects[donor]
+        atlas[H - y - h:H - y, x:x + w] = img          # repaint the donor sprite
+
+    pairs = font["_sprites"]["_pairs"]
+    have = {p["_key"] for p in pairs}
+    for cyr_c, lat_c in {**paths.SAME_AS_LATIN_SPRITE, **paths.SPRITE_DONORS}.items():
+        pid = rects[lat_c][0]
+        for u in (ord(cyr_c), ord(cyr_c.lower())):
+            if u not in have:
+                pairs.append({"_key": u, "_value": {"m_FileID": 0, "m_PathID": pid}})
+                have.add(u)
+    pairs.sort(key=lambda p: p["_key"])
+
+    fobj.save_typetree(font)
+    tex.image = Image.fromarray(atlas, "RGBA")
+    tex.save()
+    with open(paths.build(paths.UI_BUNDLE), "wb") as f:
+        f.write(env.file.save(packer="original"))
+    print(f"  ✓ sprite font: reused {len(paths.SAME_AS_LATIN_SPRITE)}, "
+          f"drawn {len(paths.SPRITE_DONORS)}")
+
+
+if __name__ == "__main__":
+    os.makedirs(paths.BUILD, exist_ok=True)
+    for name in paths.PATCHED:
+        if not os.path.exists(paths.backup(name)):
+            sys.exit(f"✗ No original {name} — run tools/extract.py first")
+    print("build:")
+    build_translation()
+    build_tmp_font()
+    build_sprite_font()
+    print(f"\n  done -> {paths.BUILD}")
