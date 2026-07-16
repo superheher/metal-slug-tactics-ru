@@ -22,7 +22,7 @@ import spritefont
 
 # ─────────────────────────────── 1. text ───────────────────────────────
 def build_translation():
-    ru = json.load(open(os.path.join(paths.ROOT, "translation", "ru.json")))
+    ru = json.load(open(paths.res("translation", "ru.json")))
     ru[paths.LANG_NAME_ID] = "Русский"      # this is how the language is labelled in the list
     ru[paths.SYSTEM_TPL_ID] = "{Locale}"    # drop the «Системный (...)» wrapper
 
@@ -65,7 +65,7 @@ def build_translation():
 # ──────────────────────────── 2. TMP font ────────────────────────────
 def build_tmp_font():
     """Cyrillic in the metal-slug SDF — it renders headings such as «Синхро» in the tables."""
-    glyphs = json.load(open(os.path.join(paths.ROOT, "font", "tmp_metalslug_7x7.json")))["letters"]
+    glyphs = json.load(open(paths.res("font", "tmp_metalslug_7x7.json")))["letters"]
     SCALE, SIZE = 11, 7
 
     env = UnityPy.load(paths.backup(paths.FONTS_BUNDLE))
@@ -159,7 +159,7 @@ def build_sprite_font():
     take over UNUSED sprites (selector1..3): each is given a copy of a letter's geometry,
     and its rectangle is relocated to free space in the atlas.
     """
-    cyr = json.load(open(os.path.join(paths.ROOT, "font", "sprite_banner_25x25.json")))["letters"]
+    cyr = json.load(open(paths.res("font", "sprite_banner_25x25.json")))["letters"]
 
     env, fobj, font, tobj, by_char, by_name = spritefont.open_ui(paths.backup(paths.UI_BUNDLE))
     objs = {o.path_id: o for o in env.objects}
@@ -249,7 +249,7 @@ def build_sprite_font():
           f"drawn {len(paths.SPRITE_DONORS)} (of which {regeom} on unused sprites)")
 
 
-if __name__ == "__main__":
+def main():
     os.makedirs(paths.BUILD, exist_ok=True)
     for name in paths.PATCHED:
         if not os.path.exists(paths.backup(name)):
@@ -259,3 +259,7 @@ if __name__ == "__main__":
     build_tmp_font()
     build_sprite_font()
     print(f"\n  done -> {paths.BUILD}")
+
+
+if __name__ == "__main__":
+    main()

@@ -9,3 +9,7 @@ build/
 .venv/
 __pycache__/
 *.pyc
+
+# building the standalone installer (PyInstaller)
+dist/
+*.manifest

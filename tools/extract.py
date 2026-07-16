@@ -119,7 +119,7 @@ def extract_latin_font():
     print(f"  ✓ latin_ref.json: {len(ref)} Latin 7×7 glyphs")
 
 
-if __name__ == "__main__":
+def main():
     os.makedirs(paths.BUILD, exist_ok=True)
     print(f"game: {paths.GAME}\n")
     print("originals:")
@@ -127,3 +127,7 @@ if __name__ == "__main__":
     print("\nreferences:")
     extract_strings()
     extract_latin_font()
+
+
+if __name__ == "__main__":
+    main()

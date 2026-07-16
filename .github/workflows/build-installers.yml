@@ -1,0 +1,64 @@
+name: build-installers
+
+# Builds the standalone installers (mst-ru-setup) for Windows/Linux/macOS.
+# Runs on a version tag push (e.g. v1.0.0) or manually from the Actions tab.
+# On a tag, the built files are attached to the GitHub Release.
+#
+# Only the translation and font sources go into the installer — the game's assets
+# are not in the build: the patch is built on the player's machine from their copy of the game.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            asset: mst-ru-setup-windows.exe
+            built: dist/mst-ru-setup.exe
+          - os: ubuntu-latest
+            asset: mst-ru-setup-linux
+            built: dist/mst-ru-setup
+          - os: macos-latest
+            asset: mst-ru-setup-macos-arm64
+            built: dist/mst-ru-setup
+          - os: macos-13
+            asset: mst-ru-setup-macos-intel
+            built: dist/mst-ru-setup
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip UnityPy numpy Pillow pyinstaller
+
+      - name: Build standalone installer
+        run: pyinstaller --noconfirm packaging/mst-ru.spec
+
+      - name: Name the artifact
+        shell: bash
+        run: cp "${{ matrix.built }}" "${{ matrix.asset }}"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.asset }}

@@ -1,0 +1,38 @@
+name: ci
+
+# A quick health check of the repository without the game's assets: whether the
+# scripts compile and whether the translation and font JSON is valid. The full markup
+# check (validate.py) needs strings from the game and is therefore done locally at install time.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Byte-compile the tools
+        run: python -m compileall -q tools
+
+      - name: Validate JSON sources parse
+        run: |
+          python - <<'PY'
+          import json, glob, sys
+          bad = 0
+          for p in ['translation/ru.json', *glob.glob('font/*.json')]:
+              try:
+                  json.load(open(p, encoding='utf-8'))
+                  print('ok  ', p)
+              except Exception as e:
+                  print('FAIL', p, e); bad += 1
+          sys.exit(bad)
+          PY

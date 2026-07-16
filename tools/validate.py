@@ -78,7 +78,7 @@ def main():
         for i, v in rows.items():
             en[str(i)] = v
             table_of[str(i)] = name.replace("_en-US", "")
-    ru = json.load(open(os.path.join(paths.ROOT, "translation", "ru.json")))
+    ru = json.load(open(paths.res("translation", "ru.json")))
 
     fatal = collections.defaultdict(list)
     warn = collections.defaultdict(list)
