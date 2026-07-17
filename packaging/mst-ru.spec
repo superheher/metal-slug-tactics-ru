@@ -25,14 +25,15 @@ _build_date = os.path.join(ROOT, 'build_date.txt')   # written by CI; shown by t
 if os.path.exists(_build_date):
     datas.append((_build_date, '.'))
 binaries = []
-hiddenimports = ['paths', 'install', 'extract', 'validate', 'build', 'spritefont']
+hiddenimports = ['paths', 'install', 'extract', 'validate', 'build', 'spritefont',
+                 'darkdetect', 'sv_ttk']
 
 # UnityPy drags along native decoders and their data: the Unity type database, the
 # fmod_toolkit audio bridge (libfmod), the texture decoders (astc_encoder/texture2ddecoder/etcpak)
 # and archspec with its JSON description of processors. Without them the binary crashes reading a bundle.
 # We collect the packages that are actually installed on this platform.
 for _pkg in ('UnityPy', 'fmod_toolkit', 'astc_encoder', 'archspec',
-             'texture2ddecoder', 'etcpak'):
+             'texture2ddecoder', 'etcpak', 'sv_ttk'):
     try:
         _d, _b, _h = collect_all(_pkg)
     except Exception:
