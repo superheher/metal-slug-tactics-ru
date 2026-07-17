@@ -33,8 +33,10 @@ def game_running():
     name = "Metal Slug Tactics.exe"
     try:
         if platform.system() == "Windows":
+            # CREATE_NO_WINDOW (0x08000000): don't flash a console when the GUI (windowed) app
+            # runs the console-mode `tasklist`.
             out = subprocess.run(["tasklist", "/FI", f"IMAGENAME eq {name}"],
-                                 capture_output=True, text=True).stdout or ""
+                                 capture_output=True, text=True, creationflags=0x08000000).stdout or ""
             return name.lower() in out.lower()
         return subprocess.run(["pgrep", "-f", name],
                               capture_output=True, text=True).returncode == 0
