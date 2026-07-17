@@ -19,7 +19,7 @@ ICON = os.path.join(SPECPATH, 'art', 'mst-ru.ico')   # applied only on Windows b
 
 datas = [(os.path.join(ROOT, 'translation'), 'translation'),
          (os.path.join(ROOT, 'font'), 'font'),
-         (os.path.join(SPECPATH, 'art', 'poster.png'), 'art'),   # shown in the GUI window
+         (os.path.join(SPECPATH, 'art', 'poster.jpg'), 'art'),   # shown in the GUI window
          (os.path.join(SPECPATH, 'art', 'mst-ru.ico'), 'art'),   # exe icon
          (os.path.join(SPECPATH, 'art', 'mst-ru.png'), 'art'),   # window/taskbar icon (iconphoto)
          (os.path.join(SPECPATH, 'art', 'JetBrainsMonoNL-Regular.ttf'), 'art'),  # log/link font
@@ -35,7 +35,7 @@ hiddenimports = ['paths', 'install', 'extract', 'validate', 'build', 'spritefont
 # fmod_toolkit audio bridge (libfmod), the texture decoders (astc_encoder/texture2ddecoder/etcpak)
 # and archspec with its JSON description of processors. Without them the binary crashes reading a bundle.
 # We collect the packages that are actually installed on this platform.
-for _pkg in ('UnityPy', 'fmod_toolkit', 'astc_encoder', 'archspec',
+for _pkg in ('UnityPy', 'astc_encoder', 'archspec',
              'texture2ddecoder', 'etcpak', 'sv_ttk'):
     try:
         _d, _b, _h = collect_all(_pkg)
@@ -53,7 +53,7 @@ a = Analysis(
     hiddenimports=hiddenimports,
     hookspath=[],
     runtime_hooks=[],
-    excludes=[],
+    excludes=['fmod_toolkit'],   # UnityPy's audio decoder — we never touch audio (~2-4 MB)
     noarchive=False,
 )
 

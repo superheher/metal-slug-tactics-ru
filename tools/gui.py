@@ -257,7 +257,7 @@ class App:
         # scale the poster to the exact height of the controls -> no empty margins
         self.root.update_idletasks()
         h = right.winfo_reqheight()
-        poster = _art("poster.png")
+        poster = _art("poster.jpg")
         if poster:
             try:
                 from PIL import Image, ImageTk

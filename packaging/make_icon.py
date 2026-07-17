@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate the exe / window icon (mst-ru.ico) from the poster art.
 
-Input:  packaging/art/poster.png
+Input:  packaging/art/poster.jpg
 Output: packaging/art/mst-ru.ico          (Marco, all sizes; small ones sharpened)
         packaging/art/preview-icon.png     (review only, git-ignored)
 
@@ -24,7 +24,7 @@ def square_frac(im, cx, cy, half):
 
 
 def main():
-    poster = Image.open(os.path.join(ART, "poster.png")).convert("RGBA")
+    poster = Image.open(os.path.join(ART, "poster.jpg")).convert("RGBA")
     # tighter crop on Marco's face so it still reads at 16-32 px
     base = square_frac(poster, cx=0.47, cy=0.66, half=0.13).resize((256, 256), Image.LANCZOS)
 
