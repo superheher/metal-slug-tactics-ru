@@ -83,6 +83,9 @@ def main():
     marco.save(os.path.join(ART, "mst-ru.ico"),
                sizes=[(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
 
+    # 3b) Small wizard image (top-right corner of the interior pages).
+    marco.resize((138, 140), Image.LANCZOS).save(os.path.join(ART, "wizard-small.bmp"))
+
     # ---- preview mocks (for review only) ----
     _preview_welcome(wiz)
     _preview_icon(marco)
