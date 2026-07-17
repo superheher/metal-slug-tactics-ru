@@ -26,6 +26,8 @@ import install as installer
 TITLE = "Metal Slug Tactics — русификатор"
 REPO_URL = "https://github.com/superheher/metal-slug-tactics-ru"
 GAME_VERSION = "1.0.4"
+INSTALL_PHASES = ["Сохраняю оригиналы игры…", "Проверяю перевод…",
+                  "Собираю русские бандлы…", "Устанавливаю в игру…"]
 
 
 class _Null:
@@ -92,27 +94,30 @@ def _register_mono():
 
 
 class _Tip:
-    """A tiny hover tooltip."""
-    def __init__(self, widget, text):
-        self.widget, self.text, self.tip = widget, text, None
-        widget.bind("<Enter>", self._show)
-        widget.bind("<Leave>", self._hide)
+    """Theme-aware hover tooltip, delayed, drawn INSIDE the window just above the widget
+    (so it never spills off the screen edge)."""
+    def __init__(self, widget, text, dark=False):
+        self.widget, self.after_id = widget, None
+        self.label = tk.Label(widget.winfo_toplevel(), text=text,
+                              background="#2b2b2b" if dark else "#ffffff",
+                              foreground="#e6e6e6" if dark else "#1a1a1a",
+                              padx=7, pady=4, font=("", 9), relief="solid", borderwidth=1)
+        widget.bind("<Enter>", self._enter)
+        widget.bind("<Leave>", self._leave)
 
-    def _show(self, _):
-        if self.tip:
-            return
-        x = self.widget.winfo_rootx()
-        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 3
-        self.tip = tk.Toplevel(self.widget)
-        self.tip.wm_overrideredirect(True)
-        self.tip.wm_geometry(f"+{x}+{y}")
-        tk.Label(self.tip, text=self.text, background="#333333", foreground="white",
-                 padx=6, pady=3, font=("", 9)).pack()
+    def _enter(self, _):
+        self.after_id = self.widget.after(1200, self._show)
 
-    def _hide(self, _):
-        if self.tip:
-            self.tip.destroy()
-            self.tip = None
+    def _leave(self, _):
+        if self.after_id:
+            self.widget.after_cancel(self.after_id)
+            self.after_id = None
+        self.label.place_forget()
+
+    def _show(self):
+        self.after_id = None
+        self.label.place(in_=self.widget, relx=1.0, rely=0.0, anchor="se", y=-4)
+        self.label.lift()
 
 
 class _QueueWriter:
@@ -134,6 +139,9 @@ class App:
         self.q = queue.Queue()
         self.worker = None
         self._imgs = []
+        self._buf = ""
+        self._phase = 0
+        self._revert = False
         _app_id()
         root.title(TITLE)
         root.resizable(False, False)
@@ -240,8 +248,8 @@ class App:
         link = ttk.Label(bottom, text=(f"build {bd}  ↗" if bd else "GitHub  ↗"),
                          foreground=link_fg, cursor="hand2", font=link_font)
         link.pack(side="right")
-        link.bind("<Button-1>", lambda e: webbrowser.open(REPO_URL))
-        _Tip(link, REPO_URL)
+        link.bind("<ButtonRelease-1>", lambda e: webbrowser.open(REPO_URL))
+        _Tip(link, REPO_URL, self.dark)
 
         # scale the poster to the exact height of the controls -> no empty margins
         self.root.update_idletasks()
@@ -277,12 +285,16 @@ class App:
         paths._GAME = None                       # drop the cached lazy paths so a new one resolves
         for a in ("GAME", "AA", "OPTIONS"):      # pop from __dict__ directly (hasattr would
             paths.__dict__.pop(a, None)          # trigger the lazy __getattr__ we are resetting)
+        self._revert = revert
+        self._phase = 0
+        self._buf = ""
         self._set_busy(True)
         self.prog.configure(value=0)
-        self.status.set("Откат…" if revert else "Установка…")
+        self.status.set("Откат на английский…" if revert else "Установка перевода…")
         self.log.configure(state="normal")
         self.log.delete("1.0", "end")
         self.log.configure(state="disabled")
+        self._append(("Откат на английский…\n" if revert else "Установка перевода…\n"), "hdr")
         self.worker = threading.Thread(target=self._work, args=(revert,), daemon=True)
         self.worker.start()
 
@@ -309,27 +321,47 @@ class App:
         self.install_btn.configure(state=st)
         self.revert_btn.configure(state=st)
 
-    def _append(self, s):
-        tag = "ok" if "✓" in s else "err" if "✗" in s else "hdr" if "══" in s else ""
+    def _append(self, s, tag=None):
+        if tag is None:
+            tag = "ok" if "✓" in s else "err" if "✗" in s else "hdr" if "══" in s else ""
         self.log.configure(state="normal")
         self.log.insert("end", s, tag)
         self.log.see("end")
         self.log.configure(state="disabled")
+
+    def _curate(self, line):
+        """Show a short, friendly line instead of the engine's long raw output."""
+        if "══" in line:
+            i = self._phase
+            self._phase += 1
+            if self.prog["value"] < 4:
+                self.prog.step(1)
+            self._append((INSTALL_PHASES[i] if i < len(INSTALL_PHASES)
+                          else line.strip("═ ")) + "\n", "hdr")
+        elif "✗" in line and line.strip():
+            self._append(line.strip() + "\n", "err")
+        # verbose per-item lines are dropped on purpose — too long for the narrow log
 
     def _poll(self):
         try:
             while True:
                 kind, val = self.q.get_nowait()
                 if kind == "log":
-                    self._append(val)
-                    if "══" in val and self.prog["value"] < 4:
-                        self.prog.step(1)
+                    self._buf += val
+                    while "\n" in self._buf:
+                        line, self._buf = self._buf.split("\n", 1)
+                        self._curate(line)
                 elif kind == "done":
                     self._set_busy(False)
                     ok = val in (0, None)
                     self.prog.configure(value=4 if ok else 0)
-                    self.status.set("Готово! Запустите игру." if ok
-                                    else "Не получилось — смотрите лог.")
+                    if ok:
+                        self.status.set("Готово. Английский возвращён." if self._revert
+                                        else "Готово! Запустите игру.")
+                        self._append(("✓ Английский возвращён.\n" if self._revert
+                                      else "✓ Готово! Русский включён.\n"), "ok")
+                    else:
+                        self.status.set("Не получилось — смотрите лог.")
         except queue.Empty:
             pass
         self.root.after(80, self._poll)
