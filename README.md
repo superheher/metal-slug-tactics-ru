@@ -8,7 +8,6 @@
 родная локализация: язык добавляется прямо в игру и переключается в настройках.
 
 <p align="center"><img src="assets/screenshot-pixel-font.jpg" alt="Скриншот из игры" width="820"></p>
-<p align="center"><em>Русский прямо в игре</em></p>
 
 ## Загрузка
 

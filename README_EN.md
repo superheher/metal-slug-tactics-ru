@@ -8,7 +8,6 @@ A full Russian translation of Metal Slug Tactics — the entire game, including 
 dialogue. It works as a native locale: the language is added right into the game and switched in the settings.
 
 <p align="center"><img src="assets/screenshot-pixel-font.jpg" alt="In-game screenshot" width="820"></p>
-<p align="center"><em>Russian, right in the game</em></p>
 
 ## Download
 
