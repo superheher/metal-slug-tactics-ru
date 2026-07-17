@@ -1,12 +1,10 @@
 name: build-installer
 
-# Builds the self-contained Windows installer (mst-ru-setup.exe): a PyInstaller one-folder
-# bundle wrapped by Inno Setup. Nothing — no Python, no .NET, no libraries — needs to be
-# installed on the target Windows 10/11 machine. The game's assets are not in the build: the
-# patch is built on the player's machine from their own copy of the game.
+# Builds the single self-contained Windows patcher (mst-ru-setup.exe) with PyInstaller
+# (onefile). Double-clicking it unpacks to a temp folder, patches the game from the player's
+# own copy, and cleans up — nothing is installed. The game's assets are not in the build.
 #
-# Every run rebuilds the exe and (re)publishes a SINGLE rolling "latest" release, named with the
-# build date — so GitHub Releases always shows exactly one, current, dated download.
+# Every push to main rebuilds it and updates one rolling "latest" release, named with the build date.
 
 on:
   push:
@@ -32,16 +30,13 @@ jobs:
       - name: Build date
         id: meta
         shell: bash
-        run: echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+        run: |
+          d=$(date -u +%Y-%m-%d)
+          echo "$d" > build_date.txt
+          echo "date=$d" >> "$GITHUB_OUTPUT"
 
-      - name: Build the one-folder bundle (PyInstaller)
+      - name: Build the single-file exe (PyInstaller)
         run: pyinstaller --noconfirm packaging/mst-ru.spec
-
-      - name: Install Inno Setup
-        run: choco install innosetup --no-progress -y
-
-      - name: Build the installer (Inno Setup, build date embedded)
-        run: '& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DMyBuildDate=${{ steps.meta.outputs.date }} packaging\mst-ru.iss'
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -56,7 +51,7 @@ jobs:
         run: |
           date="${{ steps.meta.outputs.date }}"
           title="Metal Slug Tactics RU · $date"
-          notes="Автономный установщик под Windows. Дата сборки: **$date**.
+          notes="Автономный русификатор Metal Slug Tactics под Windows. Дата сборки: **$date**.
 
           Скачайте \`mst-ru-setup.exe\` и запустите."
           if gh release view latest >/dev/null 2>&1; then

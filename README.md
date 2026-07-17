@@ -110,15 +110,12 @@ install.bat          # Windows
 
 ### Сборка установщика (для мейнтейнеров)
 
-На Windows, с установленным [Inno Setup 6](https://jrsoftware.org/isdl.php):
-
 ```sh
 pip install UnityPy numpy Pillow pyinstaller
-python packaging/make_wizard_images.py   # только если меняли арт в packaging/art/
-pyinstaller packaging/mst-ru.spec        # -> dist/mst-ru/ (автономный onedir-бандл)
-iscc packaging/mst-ru.iss                # -> dist/mst-ru-setup.exe
+python packaging/make_icon.py            # только если меняли постер в packaging/art/
+pyinstaller packaging/mst-ru.spec        # -> dist/mst-ru-setup.exe (один файл)
 ```
 
-PyInstaller собирает бандл; Inno Setup заворачивает его в единый `mst-ru-setup.exe`. CI
-(`.github/workflows/build-installers.yml`) на **push в `main`** делает это на Windows-раннере и
-держит один «плавающий» релиз `latest` с датой сборки.
+PyInstaller собирает всё в единый `mst-ru-setup.exe` (onefile: при запуске распаковывается во
+временную папку, патчит игру, за собой убирает). CI (`.github/workflows/build-installers.yml`) на
+**push в `main`** собирает его на Windows-раннере и держит один «плавающий» релиз `latest` с датой сборки.

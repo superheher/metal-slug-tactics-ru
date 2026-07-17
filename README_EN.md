@@ -112,15 +112,12 @@ translation. The game path is found automatically (Steam libraries + Wine prefix
 
 ### Building the installer (for maintainers)
 
-On Windows, with [Inno Setup 6](https://jrsoftware.org/isdl.php) installed:
-
 ```sh
 pip install UnityPy numpy Pillow pyinstaller
-python packaging/make_wizard_images.py   # only after changing the art in packaging/art/
-pyinstaller packaging/mst-ru.spec        # -> dist/mst-ru/ (self-contained one-folder bundle)
-iscc packaging/mst-ru.iss                # -> dist/mst-ru-setup.exe
+python packaging/make_icon.py            # only after changing the poster in packaging/art/
+pyinstaller packaging/mst-ru.spec        # -> dist/mst-ru-setup.exe (single file)
 ```
 
-PyInstaller produces the bundle; Inno Setup wraps it into a single `mst-ru-setup.exe`. CI
-(`.github/workflows/build-installers.yml`) does this on a Windows runner on every **push to `main`**
-and keeps one rolling `latest` release, named with the build date.
+PyInstaller bundles everything into a single `mst-ru-setup.exe` (onefile: on launch it unpacks to a
+temp folder, patches the game, and cleans up). CI (`.github/workflows/build-installers.yml`) builds
+it on a Windows runner on every **push to `main`** and keeps one rolling `latest` release, named with the build date.

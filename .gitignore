@@ -14,10 +14,11 @@ __pycache__/
 dist/
 *.manifest
 
-# installer art: review previews and unused derivatives
-# (regenerate the wizard image / icon with packaging/make_wizard_images.py)
+# installer art previews (regenerate the icon with packaging/make_icon.py)
 packaging/art/preview-*.png
-packaging/art/banner-wide.bmp
+
+# build metadata written by CI
+build_date.txt
 
 # macOS
 .DS_Store

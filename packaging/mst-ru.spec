@@ -1,11 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller: the Windows patcher, built as a one-folder bundle (dist/mst-ru/).
+"""PyInstaller: the Windows patcher as a single self-contained exe (onefile).
 
-Produces dist/mst-ru/mst-ru.exe plus its _internal/ dependencies. Inno Setup
-(packaging/mst-ru.iss) then wraps this folder into a single mst-ru-setup.exe.
-The bundle carries ONLY the translation and font sources (translation/, font/)
-plus UnityPy's data (the Unity type database, without which the bundles cannot be
-read). The game's assets are not here — the patch is built on the player's machine.
+Produces dist/mst-ru-setup.exe. Double-clicking it unpacks to a temp folder, runs
+the patcher (finds the game, rebuilds the translation from the player's own copy,
+enables Russian), then cleans up — no install, nothing left behind.
+
+The exe carries ONLY the translation and font sources (translation/, font/) plus
+UnityPy's data (the Unity type database). The game's assets are not here.
 
 Run from the repository root:  pyinstaller packaging/mst-ru.spec
 """
@@ -18,6 +19,9 @@ ICON = os.path.join(SPECPATH, 'art', 'mst-ru.ico')   # applied only on Windows b
 
 datas = [(os.path.join(ROOT, 'translation'), 'translation'),
          (os.path.join(ROOT, 'font'), 'font')]
+_build_date = os.path.join(ROOT, 'build_date.txt')   # written by CI; shown by the patcher
+if os.path.exists(_build_date):
+    datas.append((_build_date, '.'))
 binaries = []
 hiddenimports = ['paths', 'extract', 'validate', 'build', 'spritefont']
 
@@ -52,13 +56,15 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.datas,
     [],
-    exclude_binaries=True,
-    name='mst-ru',
+    name='mst-ru-setup',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
+    runtime_tmpdir=None,
     console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -66,14 +72,4 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=(ICON if os.name == 'nt' else None),
-)
-
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.datas,
-    strip=False,
-    upx=False,
-    upx_exclude=[],
-    name='mst-ru',
 )

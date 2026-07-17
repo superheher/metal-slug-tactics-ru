@@ -71,14 +71,22 @@ def disable_bepinex(game_path):
     return False
 
 
+def _build_date():
+    try:
+        return open(paths.res("build_date.txt"), encoding="utf-8").read().strip()
+    except OSError:
+        return ""
+
+
 def _header(title):
     print(f"\n══ {title} ══")
 
 
 def install(dry_run=False):
-    print(f"Metal Slug Tactics translator · {platform.system()}")
+    bd = _build_date()
+    print("Metal Slug Tactics translator · " + platform.system() + (f" · build {bd}" if bd else ""))
     print(f"game:   {paths.GAME}")
-    print(f"build:  {paths.WORK}")
+    print(f"work:   {paths.WORK}")
 
     if not dry_run and game_running():
         sys.exit("\n✗ The game is running — close it and try again.")
