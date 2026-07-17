@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Minimal windowed front-end for the Metal Slug Tactics Russian translation.
 
-A small Tkinter window — game-folder field + Browse, an Install button, a progress
-bar and a log — that drives the same patch pipeline as install.py in a background
-thread. Built with PyInstaller as a windowed (no-console) single exe.
+A small themed (ttk) Tkinter window — game-folder field + Browse, an Install button,
+a progress bar and a log — that drives the same patch pipeline as install.py in a
+background thread. Built with PyInstaller as a windowed (no-console) single exe.
+On Windows the ttk widgets render with the native visual style (Segoe UI, real buttons).
 
 Run with any command-line argument to fall back to the console installer.
 """
@@ -13,6 +14,7 @@ import sys
 import threading
 import webbrowser
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import ttk, filedialog
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -88,52 +90,59 @@ class App:
 
     # ---- layout ----
     def _build(self):
-        right = tk.Frame(self.root, padx=16, pady=14)
+        base = tkfont.nametofont("TkDefaultFont")
+        fam, sz = base.cget("family"), base.cget("size")
+        title_font = (fam, sz + 5, "bold")
+        small_font = (fam, max(8, sz - 1))
+
+        ttk.Style(self.root).configure("Big.TButton", padding=(0, 7))
+
+        right = ttk.Frame(self.root, padding=(16, 14))
         right.grid(row=0, column=1, sticky="nsew")
 
-        tk.Label(right, text="Русификатор Metal Slug Tactics",
-                 font=("Helvetica", 15, "bold")).pack(anchor="w")
-        tk.Label(right, text="Добавляет русский язык прямо в игру.",
-                 fg="#555").pack(anchor="w")
-        tk.Label(right, text=f"Русский заменяет бразильский португальский · для версии игры {GAME_VERSION}",
-                 fg="#888", font=("Helvetica", 10)).pack(anchor="w", pady=(2, 12))
+        ttk.Label(right, text="Русификатор Metal Slug Tactics", font=title_font).pack(anchor="w")
+        ttk.Label(right, text="Добавляет русский язык прямо в игру.",
+                  foreground="#555").pack(anchor="w")
+        ttk.Label(right, foreground="#888", font=small_font,
+                  text=f"Русский заменяет бразильский португальский · для версии игры {GAME_VERSION}"
+                  ).pack(anchor="w", pady=(2, 14))
 
-        tk.Label(right, text="Папка игры:").pack(anchor="w")
-        row = tk.Frame(right)
-        row.pack(fill="x", pady=(2, 12))
+        ttk.Label(right, text="Папка игры:").pack(anchor="w")
+        row = ttk.Frame(right)
+        row.pack(fill="x", pady=(2, 14))
         self.path_var = tk.StringVar()
-        self.path_entry = tk.Entry(row, textvariable=self.path_var, width=34)
+        self.path_entry = ttk.Entry(row, textvariable=self.path_var)
         self.path_entry.pack(side="left", fill="x", expand=True)
-        tk.Button(row, text="Обзор…", command=self._browse).pack(side="left", padx=(6, 0))
+        ttk.Button(row, text="Обзор…", command=self._browse, width=8).pack(side="left", padx=(6, 0))
 
-        self.install_btn = tk.Button(right, text="Установить русский",
-                                     command=lambda: self._run(False), height=2)
+        self.install_btn = ttk.Button(right, text="Установить русский", style="Big.TButton",
+                                      command=lambda: self._run(False))
         self.install_btn.pack(fill="x")
 
         self.status = tk.StringVar(value="Готово к установке.")
-        tk.Label(right, textvariable=self.status, anchor="w").pack(fill="x", pady=(12, 2))
+        ttk.Label(right, textvariable=self.status, anchor="w").pack(fill="x", pady=(14, 3))
         self.prog = ttk.Progressbar(right, mode="determinate", maximum=4)
         self.prog.pack(fill="x")
 
-        logf = tk.Frame(right)
-        logf.pack(fill="both", expand=True, pady=(10, 0))
+        logf = ttk.Frame(right)
+        logf.pack(fill="both", expand=True, pady=(12, 0))
         sb = ttk.Scrollbar(logf)
         sb.pack(side="right", fill="y")
-        self.log = tk.Text(logf, height=8, width=48, state="disabled", wrap="word",
-                           bg="#1e1e1e", fg="#dcdcdc", relief="flat", font=("Menlo", 10),
-                           yscrollcommand=sb.set)
+        self.log = tk.Text(logf, height=8, width=46, state="disabled", wrap="word",
+                           relief="solid", borderwidth=1, padx=6, pady=4,
+                           font="TkFixedFont", yscrollcommand=sb.set)
         self.log.pack(side="left", fill="both", expand=True)
         sb.config(command=self.log.yview)
 
-        bottom = tk.Frame(right)
-        bottom.pack(fill="x", pady=(8, 0))
-        self.revert_btn = tk.Button(bottom, text="Откат на английский",
-                                    command=lambda: self._run(True), relief="flat", fg="#666")
+        bottom = ttk.Frame(right)
+        bottom.pack(fill="x", pady=(10, 0))
+        self.revert_btn = ttk.Button(bottom, text="Откат на английский", width=20,
+                                     command=lambda: self._run(True))
         self.revert_btn.pack(side="left")
         bd = installer._build_date()
-        link = tk.Label(bottom, text=(f"build {bd}" if bd else "GitHub"),
-                        fg="#3a6ea5", cursor="hand2")
-        link.pack(side="right")
+        link = ttk.Label(bottom, text=(f"build {bd}" if bd else "GitHub"),
+                         foreground="#3a6ea5", cursor="hand2", font=small_font)
+        link.pack(side="right", pady=(6, 0))
         link.bind("<Button-1>", lambda e: webbrowser.open(REPO_URL))
 
         # scale the poster to the exact height of the controls -> no empty margins
@@ -146,7 +155,7 @@ class App:
                 im = Image.open(poster)
                 ph = ImageTk.PhotoImage(im.resize((round(h * im.size[0] / im.size[1]), h), Image.LANCZOS))
                 self._imgs.append(ph)
-                tk.Label(self.root, image=ph, borderwidth=0).grid(row=0, column=0, sticky="ns")
+                ttk.Label(self.root, image=ph, borderwidth=0).grid(row=0, column=0, sticky="ns")
             except Exception:
                 pass
 
