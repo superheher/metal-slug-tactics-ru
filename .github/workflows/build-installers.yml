@@ -55,11 +55,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           date="${{ steps.meta.outputs.date }}"
-          title="Metal Slug Tactics — русификатор · $date"
+          title="Metal Slug Tactics RU · $date"
           notes="Автономный установщик под Windows. Дата сборки: **$date**.
 
-          Скачай \`mst-ru-setup.exe\`, закрой игру и запусти — ничего доустанавливать не нужно.
-          Подробности в [README](https://github.com/superheher/metal-slug-tactics-ru#readme)."
+          Скачайте \`mst-ru-setup.exe\` и запустите."
           if gh release view latest >/dev/null 2>&1; then
             gh release edit latest --title "$title" --notes "$notes" --target "$GITHUB_SHA" --latest
             gh release upload latest dist/mst-ru-setup.exe --clobber

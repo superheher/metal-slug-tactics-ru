@@ -4,113 +4,33 @@
 
 # Metal Slug Tactics — Russian translation
 
-A full translation: **5273 strings, ~280k characters** — the entire game, including the campaign
-dialogue. It works as a **native locale**: Russian is added to the game itself as a separate
-language. No BepInEx, no Google Translate, no on-the-fly text interception. Nothing is sent to the
-network.
+A full Russian translation of Metal Slug Tactics — the entire game, including the campaign
+dialogue. It works as a native locale: the language is added right into the game and switched in the settings.
 
-Built for game version **1.0.4**, for the **Windows** version of the game (the only PC platform it
-ships on). Linux/macOS players run that same Windows build via Proton/Wine.
+<p align="center"><img src="assets/screenshot-pixel-font.jpg" alt="In-game screenshot" width="820"></p>
+<p align="center"><em>Russian, right in the game</em></p>
 
-> The translation is built from **your** copy of the game, on your own machine. The game's assets
-> are not here and are not sent anywhere — see [Assets and copyright](#assets-and-copyright).
+## Download
 
-<p align="center"><img src="assets/screenshot-pixel-font.jpg" alt="The in-game «РАЗМЕСТИТЕ СОЛДАТ» caption" width="820"></p>
-<p align="center"><em>The banner captions are a sprite pixel font, not text — the Cyrillic is redrawn in the game's native style.</em></p>
+Download **`mst-ru-setup.exe`** from the [releases](../../releases/latest) page and run it.
 
----
+If Windows SmartScreen shows “unknown publisher”, click **“More info” → “Run anyway”**.
 
-## Installation
+## License
 
-### Easy — the ready-made installer (no Python, no dependencies)
-
-1. Download **`mst-ru-setup.exe`** from the [**Releases**](../../releases/latest) page. It is a
-   self-contained Windows installer — nothing else has to be installed (no Python, no .NET).
-2. **Close the game** and double-click the installer. If SmartScreen shows “Windows protected your
-   PC / unknown publisher”, click **“More info” → “Run anyway”** (the installer is not code-signed).
-3. Click through the wizard and let it run — it finds the game, builds the translation from your copy
-   and enables Russian.
-4. Launch the game — the language is already Russian.
-
-A Start-menu shortcut **“Install / update the Russian translation”** is added; run it again after
-every Steam update of the game. There is also a **“Revert to English”** shortcut.
-
-### From source (needs Python 3)
-
-```sh
-# Windows
-install.bat
-
-# Linux and macOS
-./install.sh
-```
-
-The wrapper sets up a virtual environment, installs the dependencies, builds and installs the translation.
-
-The game path is found automatically — by Steam libraries and common Wine prefixes.
-If it is not found, set it explicitly:
-
-```sh
-# Windows
-set MST_PATH=C:\path\to\steamapps\common\MST
-install.bat
-
-# Linux and macOS
-MST_PATH="/path/to/steamapps/common/MST" ./install.sh
-```
-
-### After a game update
-
-**After every Steam update — install the translation again.** An update restores the native
-bundles; the installer notices this, refreshes the backup and rebuilds the translation from the new original.
-
-### Rollback
-
-```sh
-./mst-ru-setup-...   --revert      # the ready-made installer
-./install.sh --revert              # from source (install.bat --revert on Windows)
-```
-
-Restores the originals from the backup. Then choose English in **НАСТРОЙКИ → Язык**.
-
-### Checking without installing
-
-`--dry-run` builds and checks the translation, but does not touch the game — handy after edits.
+An unofficial, non-commercial fan translation, not affiliated with the rights holders. The game and
+its assets belong to SNK, Dotemu and Leikir Studio; the translation is built on your machine from
+your own copy of the game and is not distributed. Code and translation sources are under [MIT](LICENSE).
 
 ---
 
-## What is here
+## Development
 
-```
-translation/ru.json              the translation: string id -> Russian text
-font/tmp_metalslug_7x7.json      22 Cyrillic letters for the TMP font (7×7 grid)
-font/sprite_banner_25x25.json     8 Cyrillic letters for the sprite font (25×25 grid)
-glossary/                        the term glossary and the canon for labels inside placeholders
-tools/                           game discovery, extraction, validation, build, install
-packaging/mst-ru.spec / .iss     build the standalone Windows installer (PyInstaller + Inno Setup)
-packaging/art/                   installer branding (poster, icon)
-.github/workflows/               CI: build the Windows installer, publish the rolling latest release
-```
+Below is how the translation works inside and how to edit it. A regular player does not need this.
 
----
+### How it works
 
-## Assets and copyright
-
-**The game's assets are not here and never will be.** The game, its original text, fonts and graphics
-belong to **SNK, Dotemu and Leikir Studio**. This is an unofficial, non-commercial fan translation,
-in no way affiliated with the rights holders.
-
-The localized bundles are **not distributed**: they are built on the player's machine from their own
-copy of the game (Steam appid `1590760`). The `backup/` and `build/` folders never end up in git.
-Use the translation only with a legally purchased copy of Metal Slug Tactics.
-
-The code and translation sources are under [MIT](LICENSE).
-
----
-
-## How it works
-
-### Text
+#### Text
 
 The game has its own localization system (Unity Localization) with nine languages; Russian is
 not among them, and a tenth cannot be added. So Russian took over the slot of **Brazilian
@@ -132,7 +52,7 @@ Three non-obvious facts, learned the hard way:
   the system-language item. In the Russian table it is replaced with `{Locale}`, otherwise the
   item is called «Системный (Русский)».
 
-### Banner captions — a separate story
+#### Banner captions
 
 The big captions on the black bar — `ХОД ИГРОКА`, `ХОД ПРОТИВНИКА`, `РАЗМЕСТИТЕ БОЙЦОВ`,
 `ПОБЕДА`, `ПОРАЖЕНИЕ` — are drawn **not as text but as sprites**: the `SpriteText` component
@@ -156,24 +76,22 @@ The letter recipe is reverse-engineered from the originals and reproduces `H`, `
 - white outline `(248,248,248)` — 1px outward;
 - black border — a ring around the outline **plus** a drop shadow offset down-right.
 
----
-
-## How to edit the translation
+### Editing the translation
 
 1. Open `translation/ru.json` — a flat dictionary `"string id": "Russian text"`.
 2. Edit the text. **Do not touch** the paths inside `{...}` or the tags `<...>` — the output will
    break. But the text AFTER the colon inside a placeholder (`{Move:перемещает}`) is exactly what the
    player sees, so it can and should be edited.
-3. `./install.sh` (or `install.bat`) — checks the markup integrity, rebuilds and installs.
-   Want to only check — add `--dry-run`.
+3. `install.bat` (or `./install.sh`) checks the markup integrity, rebuilds and installs.
+   Add `--dry-run` to only check.
 
-## How to edit the letters
+### Editing the letters
 
 The shapes live in `font/` as plain text: `#` is ink, `.` is empty.
 Edit the grid — the installer rebuilds. The outline, shadow, border and the gradient with
 dithering are added automatically by the recipe.
 
-## Term decisions
+### Term decisions
 
 - Peregrine Falcons / Falcons → **«Сапсаны»** · SPARROWS → **«Воробьи»**
 - unit → **боец** · Sync → **синхроудар** · World Government → **Всемирное правительство**
@@ -182,11 +100,20 @@ dithering are added automatically by the recipe.
 
 Details are in `glossary/`.
 
----
+### From source (needs Python 3)
 
-## Building the installer (for maintainers)
+```sh
+install.bat          # Windows
+./install.sh         # Linux / macOS
+```
 
-On **Windows**, with [Inno Setup 6](https://jrsoftware.org/isdl.php) installed:
+The wrapper sets up a virtual environment, installs the dependencies, builds and installs the
+translation. The game path is found automatically (Steam libraries + Wine prefixes); if not, set
+`MST_PATH=...`. Roll back with `--revert`.
+
+### Building the installer (for maintainers)
+
+On Windows, with [Inno Setup 6](https://jrsoftware.org/isdl.php) installed:
 
 ```sh
 pip install UnityPy numpy Pillow pyinstaller
@@ -196,11 +123,5 @@ iscc packaging/mst-ru.iss                # -> dist/mst-ru-setup.exe
 ```
 
 PyInstaller produces the bundle; Inno Setup wraps it into a single `mst-ru-setup.exe`. CI
-(`.github/workflows/build-installers.yml`) does both on a Windows runner and publishes the exe as a
-single rolling **latest** release, named with the build date. To trigger a build, push a version
-tag or run the workflow from the Actions tab:
-
-```sh
-git tag v1.0.4
-git push origin v1.0.4
-```
+(`.github/workflows/build-installers.yml`) does this on a Windows runner on every **push to `main`**
+and keeps one rolling `latest` release, named with the build date.
