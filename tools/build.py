@@ -22,11 +22,11 @@ import spritefont
 
 # ─────────────────────────────── 1. text ───────────────────────────────
 def build_translation():
-    ru = json.load(open(paths.res("translation", "ru.json")))
+    ru = json.load(open(paths.res("translation", "ru.json"), encoding="utf-8"))
     ru[paths.LANG_NAME_ID] = "Русский"      # this is how the language is labelled in the list
     ru[paths.SYSTEM_TPL_ID] = "{Locale}"    # drop the «Системный (...)» wrapper
 
-    tables = json.load(open(paths.build("en_strings.json")))["tables"]
+    tables = json.load(open(paths.build("en_strings.json"), encoding="utf-8"))["tables"]
     want = {name.replace("_en-US", ""): {str(i) for i in rows} for name, rows in tables.items()}
 
     env = UnityPy.load(paths.backup(paths.PT_BUNDLE))
@@ -65,7 +65,7 @@ def build_translation():
 # ──────────────────────────── 2. TMP font ────────────────────────────
 def build_tmp_font():
     """Cyrillic in the metal-slug SDF — it renders headings such as «Синхро» in the tables."""
-    glyphs = json.load(open(paths.res("font", "tmp_metalslug_7x7.json")))["letters"]
+    glyphs = json.load(open(paths.res("font", "tmp_metalslug_7x7.json"), encoding="utf-8"))["letters"]
     SCALE, SIZE = 11, 7
 
     env = UnityPy.load(paths.backup(paths.FONTS_BUNDLE))
@@ -159,7 +159,7 @@ def build_sprite_font():
     take over UNUSED sprites (selector1..3): each is given a copy of a letter's geometry,
     and its rectangle is relocated to free space in the atlas.
     """
-    cyr = json.load(open(paths.res("font", "sprite_banner_25x25.json")))["letters"]
+    cyr = json.load(open(paths.res("font", "sprite_banner_25x25.json"), encoding="utf-8"))["letters"]
 
     env, fobj, font, tobj, by_char, by_name = spritefont.open_ui(paths.backup(paths.UI_BUNDLE))
     objs = {o.path_id: o for o in env.objects}

@@ -79,7 +79,7 @@ def extract_strings():
         if rows:
             tables[d.get("m_Name", "")] = rows
     total = sum(len(v) for v in tables.values())
-    with open(paths.build("en_strings.json"), "w") as f:
+    with open(paths.build("en_strings.json"), "w", encoding="utf-8") as f:
         json.dump({"tables": tables}, f, ensure_ascii=False)
     print(f"  ✓ en_strings.json: {len(tables)} tables, {total} strings")
 
@@ -114,7 +114,7 @@ def extract_latin_font():
         x, y, w, h = r["m_X"], r["m_Y"], r["m_Width"], r["m_Height"]
         b = (a[H - y - h:H - y, x:x + w] >= 128)[::11, ::11]     # the source grid: pixel = 11×11
         ref[c] = ["".join("#" if v else "." for v in row) for row in b]
-    with open(paths.build("latin_ref.json"), "w") as f:
+    with open(paths.build("latin_ref.json"), "w", encoding="utf-8") as f:
         json.dump({"scale": 11, "size": 7, "glyphs": ref}, f, ensure_ascii=False, indent=1)
     print(f"  ✓ latin_ref.json: {len(ref)} Latin 7×7 glyphs")
 

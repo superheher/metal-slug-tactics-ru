@@ -72,13 +72,13 @@ def main():
     if not os.path.exists(en_path):
         sys.exit("✗ No build/en_strings.json — run tools/extract.py first")
 
-    tables = json.load(open(en_path))["tables"]
+    tables = json.load(open(en_path, encoding="utf-8"))["tables"]
     en, table_of = {}, {}
     for name, rows in tables.items():
         for i, v in rows.items():
             en[str(i)] = v
             table_of[str(i)] = name.replace("_en-US", "")
-    ru = json.load(open(paths.res("translation", "ru.json")))
+    ru = json.load(open(paths.res("translation", "ru.json"), encoding="utf-8"))
 
     fatal = collections.defaultdict(list)
     warn = collections.defaultdict(list)

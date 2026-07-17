@@ -11,6 +11,7 @@ import os
 import queue
 import sys
 import threading
+import webbrowser
 import tkinter as tk
 from tkinter import ttk, filedialog
 
@@ -19,6 +20,22 @@ import paths
 import install as installer
 
 TITLE = "Metal Slug Tactics — русификатор"
+REPO_URL = "https://github.com/superheher/metal-slug-tactics-ru"
+GAME_VERSION = "1.0.4"
+
+
+class _Null:
+    """A windowed PyInstaller build has sys.stdout/stderr = None; keep stray prints harmless."""
+    def write(self, *_):
+        pass
+
+    def flush(self):
+        pass
+
+
+for _s in ("stdout", "stderr"):
+    if getattr(sys, _s) is None:
+        setattr(sys, _s, _Null())
 
 
 def _art(name):
@@ -57,6 +74,12 @@ class App:
         self._imgs = []
         root.title(TITLE)
         root.resizable(False, False)
+        try:
+            ico = _art("mst-ru.ico")
+            if ico:
+                root.iconbitmap(ico)
+        except Exception:
+            pass
         self._build()
         self.path_var.set(_detect_game())
         root.after(80, self._poll)
@@ -65,29 +88,15 @@ class App:
 
     # ---- layout ----
     def _build(self):
-        outer = tk.Frame(self.root)
-        outer.pack(fill="both", expand=True)
-
-        poster = _art("poster.png")
-        if poster:
-            try:
-                from PIL import Image, ImageTk
-                im = Image.open(poster)
-                h = 360
-                im = im.resize((round(h * im.size[0] / im.size[1]), h), Image.LANCZOS)
-                ph = ImageTk.PhotoImage(im)
-                self._imgs.append(ph)
-                tk.Label(outer, image=ph, borderwidth=0).pack(side="left", fill="y")
-            except Exception:
-                pass
-
-        right = tk.Frame(outer, padx=16, pady=14)
-        right.pack(side="left", fill="both", expand=True)
+        right = tk.Frame(self.root, padx=16, pady=14)
+        right.grid(row=0, column=1, sticky="nsew")
 
         tk.Label(right, text="Русификатор Metal Slug Tactics",
                  font=("Helvetica", 15, "bold")).pack(anchor="w")
         tk.Label(right, text="Добавляет русский язык прямо в игру.",
-                 fg="#555").pack(anchor="w", pady=(0, 12))
+                 fg="#555").pack(anchor="w")
+        tk.Label(right, text=f"Русский заменяет бразильский португальский · для версии игры {GAME_VERSION}",
+                 fg="#888", font=("Helvetica", 10)).pack(anchor="w", pady=(2, 12))
 
         tk.Label(right, text="Папка игры:").pack(anchor="w")
         row = tk.Frame(right)
@@ -106,9 +115,15 @@ class App:
         self.prog = ttk.Progressbar(right, mode="determinate", maximum=4)
         self.prog.pack(fill="x")
 
-        self.log = tk.Text(right, height=8, width=48, state="disabled", wrap="word",
-                           bg="#1e1e1e", fg="#dcdcdc", relief="flat", font=("Menlo", 10))
-        self.log.pack(fill="both", expand=True, pady=(10, 0))
+        logf = tk.Frame(right)
+        logf.pack(fill="both", expand=True, pady=(10, 0))
+        sb = ttk.Scrollbar(logf)
+        sb.pack(side="right", fill="y")
+        self.log = tk.Text(logf, height=8, width=48, state="disabled", wrap="word",
+                           bg="#1e1e1e", fg="#dcdcdc", relief="flat", font=("Menlo", 10),
+                           yscrollcommand=sb.set)
+        self.log.pack(side="left", fill="both", expand=True)
+        sb.config(command=self.log.yview)
 
         bottom = tk.Frame(right)
         bottom.pack(fill="x", pady=(8, 0))
@@ -116,8 +131,24 @@ class App:
                                     command=lambda: self._run(True), relief="flat", fg="#666")
         self.revert_btn.pack(side="left")
         bd = installer._build_date()
-        if bd:
-            tk.Label(bottom, text=f"build {bd}", fg="#999").pack(side="right")
+        link = tk.Label(bottom, text=(f"build {bd}" if bd else "GitHub"),
+                        fg="#3a6ea5", cursor="hand2")
+        link.pack(side="right")
+        link.bind("<Button-1>", lambda e: webbrowser.open(REPO_URL))
+
+        # scale the poster to the exact height of the controls -> no empty margins
+        self.root.update_idletasks()
+        h = right.winfo_reqheight()
+        poster = _art("poster.png")
+        if poster:
+            try:
+                from PIL import Image, ImageTk
+                im = Image.open(poster)
+                ph = ImageTk.PhotoImage(im.resize((round(h * im.size[0] / im.size[1]), h), Image.LANCZOS))
+                self._imgs.append(ph)
+                tk.Label(self.root, image=ph, borderwidth=0).grid(row=0, column=0, sticky="ns")
+            except Exception:
+                pass
 
     def _center(self):
         w, h = self.root.winfo_width(), self.root.winfo_height()
