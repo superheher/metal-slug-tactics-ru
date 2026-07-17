@@ -111,7 +111,7 @@ install.bat          # Windows
 ### Сборка установщика (для мейнтейнеров)
 
 ```sh
-pip install UnityPy numpy Pillow pyinstaller
+pip install UnityPy Pillow pyinstaller
 python packaging/make_icon.py            # только если меняли постер в packaging/art/
 pyinstaller packaging/mst-ru.spec        # -> dist/mst-ru-setup.exe (один файл)
 ```

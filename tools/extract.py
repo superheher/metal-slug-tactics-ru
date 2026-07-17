@@ -15,7 +15,6 @@ import os
 import shutil
 import sys
 
-import numpy as np
 import UnityPy
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -101,8 +100,9 @@ def extract_latin_font():
     pid = font["m_AtlasTextures"][0]["m_PathID"]
     tex = next(o for o in env.objects if o.type.name == "Texture2D" and o.path_id == pid).read()
 
-    a = np.array(tex.image)[..., 3]
-    H = a.shape[0]
+    alpha = tex.image.getchannel("A")           # glyph coverage is in the alpha channel
+    H = alpha.height
+    apx = alpha.load()
     ch = {c["m_Unicode"]: c["m_GlyphIndex"] for c in font["m_CharacterTable"]}
     gl = {g["m_Index"]: g for g in font["m_GlyphTable"]}
 
@@ -112,8 +112,9 @@ def extract_latin_font():
             continue
         r = gl[ch[ord(c)]]["m_GlyphRect"]
         x, y, w, h = r["m_X"], r["m_Y"], r["m_Width"], r["m_Height"]
-        b = (a[H - y - h:H - y, x:x + w] >= 128)[::11, ::11]     # the source grid: pixel = 11×11
-        ref[c] = ["".join("#" if v else "." for v in row) for row in b]
+        # atlas is bottom-up; sample every 11th pixel (the source grid is 11×11 per cell)
+        ref[c] = ["".join("#" if apx[x + cx, H - y - h + ry] >= 128 else "." for cx in range(0, w, 11))
+                  for ry in range(0, h, 11)]
     with open(paths.build("latin_ref.json"), "w", encoding="utf-8") as f:
         json.dump({"scale": 11, "size": 7, "glyphs": ref}, f, ensure_ascii=False, indent=1)
     print(f"  ✓ latin_ref.json: {len(ref)} Latin 7×7 glyphs")

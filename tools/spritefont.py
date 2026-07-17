@@ -11,7 +11,7 @@ The letter recipe is reverse-engineered from the originals and reproduces H, T, 
   • white outline (248,248,248) — 1px outward;
   • black border — a ring around the outline PLUS a drop shadow offset down-right.
 """
-import numpy as np
+from PIL import Image, ImageChops
 import UnityPy
 
 import paths
@@ -37,44 +37,45 @@ def band_at(r, c):
 
 
 def _shift(m, dy, dx):
-    return np.roll(np.roll(m, dy, 0), dx, 1)
+    # np.roll(np.roll(m, dy, rows), dx, cols) with wraparound == ImageChops.offset(m, dx, dy)
+    return ImageChops.offset(m, dx, dy)
 
 
 def _dilate(m):
-    d = np.zeros_like(m)
+    """3×3 dilation with wraparound (OR of the shifted neighbourhood)."""
+    d = Image.new("L", m.size, 0)
     for dy in (-1, 0, 1):
         for dx in (-1, 0, 1):
-            d |= _shift(m, dy, dx)
+            d = ImageChops.lighter(d, _shift(m, dy, dx))
     return d
 
 
-def layers(sprite):
-    """RGBA 25×25 -> (fill, white outline, black border). Fill = body + shadow."""
-    rgb = sprite[..., :3].astype(int)
-    opaque = sprite[..., 3] > 128
-    black = opaque & (rgb.max(2) < 50)
-    white = opaque & (rgb.min(2) > 200)
-    return opaque & ~black & ~white, white, black
-
-
 def render(fill):
-    """A binary 25×25 shape -> a finished RGBA letter in the game's style."""
-    shadow = fill & (~_shift(fill, 1, 0) | ~_shift(fill, 0, 1))   # top and left edge
-    body = fill & ~shadow
-    white = _dilate(fill) & ~fill
-    s1 = fill | white
-    ring = _dilate(s1) & ~s1
-    s2 = s1 | ring
-    drop = _shift(s2, 1, 1) & ~s2                                  # the drop shadow
-    black = ring | drop
+    """A binary 25×25 shape (mode 'L', 0/255) -> a finished RGBA letter in the game's style.
 
-    out = np.zeros((25, 25, 4), np.uint8)
+    The masks are 8-bit images holding only 0 or 255; on those, darker=AND, lighter=OR,
+    invert=NOT and offset=roll, so this layer algebra matches the boolean-array original
+    pixel for pixel.
+    """
+    AND, OR, NOT = ImageChops.darker, ImageChops.lighter, ImageChops.invert
+    shadow = AND(fill, OR(NOT(_shift(fill, 1, 0)), NOT(_shift(fill, 0, 1))))   # top and left edge
+    body = AND(fill, NOT(shadow))
+    white = AND(_dilate(fill), NOT(fill))
+    s1 = OR(fill, white)
+    ring = AND(_dilate(s1), NOT(s1))
+    s2 = OR(s1, ring)
+    drop = AND(_shift(s2, 1, 1), NOT(s2))                                      # the drop shadow
+    black = OR(ring, drop)
+
+    out = Image.new("RGBA", (25, 25), (0, 0, 0, 0))
+    px = out.load()
+    body_p, shadow_p, white_p, black_p = body.load(), shadow.load(), white.load(), black.load()
     for r in range(25):
         for c in range(25):
-            if body[r, c]:     out[r, c] = (*band_at(r, c), 255)
-            elif shadow[r, c]: out[r, c] = (*SHADOW, 255)
-            elif white[r, c]:  out[r, c] = (*WHITE, 255)
-            elif black[r, c]:  out[r, c] = (*BLACK, 255)
+            if body_p[c, r]:     px[c, r] = (*band_at(r, c), 255)
+            elif shadow_p[c, r]: px[c, r] = (*SHADOW, 255)
+            elif white_p[c, r]:  px[c, r] = (*WHITE, 255)
+            elif black_p[c, r]:  px[c, r] = (*BLACK, 255)
     return out
 
 
@@ -116,9 +117,3 @@ def open_ui(bundle_path):
             int(r["x"]), int(r["y"]), int(r["width"]), int(r["height"]))
 
     return env, font_obj, font, tex_obj, by_char, by_name
-
-
-def grab(atlas_arr, rect, height):
-    """Cuts a sprite out of the atlas texture (Unity's origin is at the bottom)."""
-    _, x, y, w, h = rect
-    return atlas_arr[height - y - h:height - y, x:x + w].copy()

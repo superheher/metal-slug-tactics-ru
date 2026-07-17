@@ -11,7 +11,6 @@ import json
 import os
 import sys
 
-import numpy as np
 from PIL import Image
 import UnityPy
 
@@ -84,7 +83,8 @@ def build_tmp_font():
     pid = tree["m_AtlasTextures"][0]["m_PathID"]
     tobj = next(o for o in env.objects if o.type.name == "Texture2D" and o.path_id == pid)
     tex = tobj.read()
-    arr = np.array(tex.image)
+    img = tex.image                             # RGBA atlas
+    alpha = img.getchannel("A")                 # the glyph pixels live in the alpha channel
     W, H = tree["m_AtlasWidth"], tree["m_AtlasHeight"]
     PAD = tree["m_AtlasPadding"]
 
@@ -92,18 +92,18 @@ def build_tmp_font():
     gl = {g["m_Index"]: g for g in tree["m_GlyphTable"]}
     tpl = gl[ch[ord("H")]]                      # metrics reference
 
-    occ = np.zeros((H, W), bool)
+    occ = Image.new("L", (W, H), 0)             # free-cell map: 255 = taken; getbbox() is None -> all free
     for g in tree["m_GlyphTable"]:
         r = g["m_GlyphRect"]
-        occ[max(0, r["m_Y"] - PAD):min(H, r["m_Y"] + r["m_Height"] + PAD),
-            max(0, r["m_X"] - PAD):min(W, r["m_X"] + r["m_Width"] + PAD)] = True
+        occ.paste(255, (max(0, r["m_X"] - PAD), max(0, r["m_Y"] - PAD),
+                        min(W, r["m_X"] + r["m_Width"] + PAD), min(H, r["m_Y"] + r["m_Height"] + PAD)))
     cell = SIZE * SCALE + 2 * PAD
     free = []
     for y in range(0, H - cell, 8):
         for x in range(0, W - cell, 8):
-            if not occ[y:y + cell, x:x + cell].any():
+            if occ.crop((x, y, x + cell, y + cell)).getbbox() is None:
                 free.append((x + PAD, y + PAD))
-                occ[y:y + cell, x:x + cell] = True
+                occ.paste(255, (x, y, x + cell, y + cell))
 
     idx = max(g["m_Index"] for g in tree["m_GlyphTable"]) + 1
     reused = drawn = 0
@@ -122,14 +122,13 @@ def build_tmp_font():
         if not free:
             sys.exit("✗ the font atlas ran out of space")
         gx, gy = free.pop(0)
-        bmp = np.zeros((SIZE, SIZE), np.uint8)
+        gw = gh = SIZE * SCALE
+        big = Image.new("L", (gw, gh), 0)                     # each 7×7 pixel becomes a SCALE×SCALE block
         for r, line in enumerate(rows):
             for c, v in enumerate(line[:SIZE]):
                 if v == "#":
-                    bmp[r, c] = 255
-        big = np.kron(bmp, np.ones((SCALE, SCALE), np.uint8))
-        gh, gw = big.shape
-        arr[H - gy - gh:H - gy, gx:gx + gw, 3] = big          # data in alpha, atlas bottom-up
+                    big.paste(255, (c * SCALE, r * SCALE, c * SCALE + SCALE, r * SCALE + SCALE))
+        alpha.paste(big, (gx, H - gy - gh))                   # data in alpha, atlas bottom-up
 
         g = json.loads(json.dumps(tpl))
         g["m_Index"] = idx
@@ -144,7 +143,8 @@ def build_tmp_font():
 
     tree["m_CharacterTable"].sort(key=lambda c: c["m_Unicode"])
     fobj.save_typetree(tree)
-    tex.image = Image.fromarray(arr, "RGBA")
+    img.putalpha(alpha)
+    tex.image = img
     tex.save()
     with open(paths.build(paths.FONTS_BUNDLE), "wb") as f:
         f.write(env.file.save(packer="original"))
@@ -166,8 +166,8 @@ def build_sprite_font():
     sa_obj = next(o for o in env.objects if o.type.name == "SpriteAtlas")
     sa = sa_obj.read_typetree()
     tex = tobj.read()
-    atlas = np.array(tex.image)
-    H, W = atlas.shape[:2]
+    atlas = tex.image                           # RGBA
+    W, H = atlas.size
 
     # the reference geometry of a letter
     src_pid = by_name[paths.GEOM_SOURCE][0]
@@ -179,17 +179,17 @@ def build_sprite_font():
     src_entry = rdm[src_key][1]
 
     # free cells in the atlas texture
-    occ = np.zeros((H, W), bool)
+    occ = Image.new("L", (W, H), 0)             # 255 = taken; getbbox() is None -> the cell is free
     for _, v in sa["m_RenderDataMap"]:
         r = v["textureRect"]
         x, y, w, h = int(r["x"]), int(r["y"]), int(r["width"]), int(r["height"])
-        occ[max(0, H - y - h - 2):H - y + 2, max(0, x - 2):x + w + 2] = True
+        occ.paste(255, (max(0, x - 2), max(0, H - y - h - 2), x + w + 2, H - y + 2))
     free = []
     for y in range(0, H - 29, 4):
         for x in range(0, W - 29, 4):
-            if not occ[y:y + 29, x:x + 29].any():
+            if occ.crop((x, y, x + 29, y + 29)).getbbox() is None:
                 free.append((x + 2, H - y - 27))          # Unity coordinates: bottom-up
-                occ[y:y + 29, x:x + 29] = True
+                occ.paste(255, (x, y, x + 29, y + 29))
 
     regeom = 0
     for letter, donor in paths.SPRITE_DONORS.items():
@@ -198,7 +198,12 @@ def build_sprite_font():
             sys.exit(f"✗ no shape for the letter {letter}")
         if donor not in by_name:
             sys.exit(f"✗ no donor sprite {donor}")
-        fill = np.array([[c == "#" for c in r.ljust(25, ".")[:25]] for r in rows[:25]], bool)
+        fill = Image.new("L", (25, 25), 0)
+        fpx = fill.load()
+        for ry, line in enumerate(rows[:25]):
+            for cx, c in enumerate(line.ljust(25, ".")[:25]):
+                if c == "#":
+                    fpx[cx, ry] = 255
         img = spritefont.render(fill)
         pid, x, y, w, h = by_name[donor]
 
@@ -225,7 +230,7 @@ def build_sprite_font():
             x, y, w, h = nx, ny, 25, 25
             regeom += 1
 
-        atlas[H - y - h:H - y, x:x + w] = img
+        atlas.paste(img, (x, H - y - h))
 
     sa_obj.save_typetree(sa)
 
@@ -241,7 +246,7 @@ def build_sprite_font():
     pairs.sort(key=lambda p: p["_key"])
 
     fobj.save_typetree(font)
-    tex.image = Image.fromarray(atlas, "RGBA")
+    tex.image = atlas
     tex.save()
     with open(paths.build(paths.UI_BUNDLE), "wb") as f:
         f.write(env.file.save(packer="original"))

@@ -53,7 +53,10 @@ a = Analysis(
     hiddenimports=hiddenimports,
     hookspath=[],
     runtime_hooks=[],
-    excludes=['fmod_toolkit'],   # UnityPy's audio decoder — we never touch audio (~2-4 MB)
+    # numpy is pulled in only by UnityPy's SpriteHelper (sprite.image), which we never call —
+    # our atlas/font math is pure Pillow now, so we drop it (~15 MB, the biggest single lever).
+    excludes=['fmod_toolkit',    # UnityPy's audio decoder — we never touch audio (~2-4 MB)
+              'numpy'],
     noarchive=False,
 )
 

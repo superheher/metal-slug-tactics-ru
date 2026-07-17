@@ -113,7 +113,7 @@ translation. The game path is found automatically (Steam libraries + Wine prefix
 ### Building the installer (for maintainers)
 
 ```sh
-pip install UnityPy numpy Pillow pyinstaller
+pip install UnityPy Pillow pyinstaller
 python packaging/make_icon.py            # only after changing the poster in packaging/art/
 pyinstaller packaging/mst-ru.spec        # -> dist/mst-ru-setup.exe (single file)
 ```
