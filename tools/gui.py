@@ -232,12 +232,15 @@ class App:
                            fg="#d6d6d6" if self.dark else "#1a1a1a",
                            highlightbackground="#3a3a3a" if self.dark else "#cccccc",
                            highlightcolor="#3a3a3a" if self.dark else "#cccccc",
+                           selectbackground="#38517a" if self.dark else "#cfe0f5",
+                           selectforeground="#ffffff" if self.dark else "#000000",
                            yscrollcommand=sb.set)
         self.log.pack(side="left", fill="both", expand=True)
         sb.config(command=self.log.yview)
         self.log.tag_configure("ok", foreground="#4ec96a" if self.dark else "#1a7f37")
         self.log.tag_configure("err", foreground="#ff6b60" if self.dark else "#cf222e")
         self.log.tag_configure("hdr", foreground="#8ab4f8" if self.dark else "#2f6fd0")
+        self.log.tag_raise("sel")   # selection colours must win over the coloured tags
 
         bottom = ttk.Frame(right)
         bottom.pack(fill="x", pady=(12, 0))
