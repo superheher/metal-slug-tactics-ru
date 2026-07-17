@@ -36,6 +36,7 @@ def main():
         imgs.append(im)
     imgs[0].save(os.path.join(ART, "mst-ru.ico"), format="ICO",
                  sizes=[(s, s) for s in SIZES], append_images=imgs[1:])
+    base.save(os.path.join(ART, "mst-ru.png"))   # for the window/taskbar icon (Tk iconphoto)
 
     # preview strip
     pad, gap = 20, 20

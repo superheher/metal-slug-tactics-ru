@@ -20,7 +20,10 @@ ICON = os.path.join(SPECPATH, 'art', 'mst-ru.ico')   # applied only on Windows b
 datas = [(os.path.join(ROOT, 'translation'), 'translation'),
          (os.path.join(ROOT, 'font'), 'font'),
          (os.path.join(SPECPATH, 'art', 'poster.png'), 'art'),   # shown in the GUI window
-         (os.path.join(SPECPATH, 'art', 'mst-ru.ico'), 'art')]   # the window icon
+         (os.path.join(SPECPATH, 'art', 'mst-ru.ico'), 'art'),   # exe icon
+         (os.path.join(SPECPATH, 'art', 'mst-ru.png'), 'art'),   # window/taskbar icon (iconphoto)
+         (os.path.join(SPECPATH, 'art', 'JetBrainsMonoNL-Regular.ttf'), 'art'),  # log/link font
+         (os.path.join(SPECPATH, 'art', 'JetBrainsMono-OFL.txt'), 'art')]        # its license
 _build_date = os.path.join(ROOT, 'build_date.txt')   # written by CI; shown by the patcher
 if os.path.exists(_build_date):
     datas.append((_build_date, '.'))

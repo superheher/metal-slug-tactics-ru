@@ -69,6 +69,28 @@ def _dark_titlebar(root):
         pass
 
 
+def _app_id():
+    """Give the process its own taskbar identity so Windows uses our window icon."""
+    try:
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("superheher.mst-ru")
+    except Exception:
+        pass
+
+
+def _register_mono():
+    """Register the bundled JetBrains Mono NL for this process; return the family to use."""
+    ttf = _art("JetBrainsMonoNL-Regular.ttf")
+    if ttf:
+        try:
+            import ctypes
+            ctypes.windll.gdi32.AddFontResourceExW(ctypes.c_wchar_p(ttf), 0x10, 0)  # FR_PRIVATE
+            return "JetBrains Mono NL"
+        except Exception:
+            pass
+    return "TkFixedFont"
+
+
 class _Tip:
     """A tiny hover tooltip."""
     def __init__(self, widget, text):
@@ -112,14 +134,11 @@ class App:
         self.q = queue.Queue()
         self.worker = None
         self._imgs = []
+        _app_id()
         root.title(TITLE)
         root.resizable(False, False)
-        try:
-            ico = _art("mst-ru.ico")
-            if ico:
-                root.iconbitmap(ico)
-        except Exception:
-            pass
+        self._set_icon(root)
+        self.mono = _register_mono()
         self.dark = self._init_theme()
         self._build()
         self.path_var.set(_detect_game())
@@ -128,6 +147,19 @@ class App:
         self._center()
         if self.dark:
             _dark_titlebar(root)
+
+    def _set_icon(self, root):
+        try:
+            from PIL import Image, ImageTk
+            png = _art("mst-ru.png")
+            if not png:
+                return
+            im = Image.open(png)
+            icons = [ImageTk.PhotoImage(im.resize((s, s), Image.LANCZOS)) for s in (256, 64, 48, 32, 16)]
+            self._imgs.extend(icons)
+            root.iconphoto(True, *icons)
+        except Exception:
+            pass
 
     def _init_theme(self):
         dark = False
@@ -150,6 +182,9 @@ class App:
         title_font = (fam, sz + 5, "bold")
         small_font = (fam, max(8, sz - 1))
         link_fg = "#5a9bff" if self.dark else "#2f6fd0"
+        mono = self.mono
+        log_font = (mono, 10) if mono != "TkFixedFont" else "TkFixedFont"
+        link_font = (mono, max(8, sz - 1)) if mono != "TkFixedFont" else small_font
 
         ttk.Style(self.root).configure("Big.TButton", padding=(0, 8))
 
@@ -184,7 +219,7 @@ class App:
         sb.pack(side="right", fill="y")
         self.log = tk.Text(logf, height=9, width=52, state="disabled", wrap="char",
                            relief="flat", borderwidth=0, padx=10, pady=8,
-                           highlightthickness=1, font="TkFixedFont",
+                           highlightthickness=1, font=log_font,
                            bg="#1d1d1d" if self.dark else "#fbfbfb",
                            fg="#d6d6d6" if self.dark else "#1a1a1a",
                            highlightbackground="#3a3a3a" if self.dark else "#cccccc",
@@ -203,7 +238,7 @@ class App:
         self.revert_btn.pack(side="left")
         bd = installer._build_date()
         link = ttk.Label(bottom, text=(f"build {bd}  ↗" if bd else "GitHub  ↗"),
-                         foreground=link_fg, cursor="hand2", font=small_font)
+                         foreground=link_fg, cursor="hand2", font=link_font)
         link.pack(side="right")
         link.bind("<Button-1>", lambda e: webbrowser.open(REPO_URL))
         _Tip(link, REPO_URL)
