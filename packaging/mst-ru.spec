@@ -35,7 +35,7 @@ hiddenimports = ['paths', 'install', 'extract', 'validate', 'build', 'spritefont
 # fmod_toolkit audio bridge (libfmod), the texture decoders (astc_encoder/texture2ddecoder/etcpak)
 # and archspec with its JSON description of processors. Without them the binary crashes reading a bundle.
 # We collect the packages that are actually installed on this platform.
-for _pkg in ('UnityPy', 'astc_encoder', 'archspec',
+for _pkg in ('UnityPy', 'fmod_toolkit', 'astc_encoder', 'archspec',
              'texture2ddecoder', 'etcpak', 'sv_ttk'):
     try:
         _d, _b, _h = collect_all(_pkg)
@@ -53,10 +53,11 @@ a = Analysis(
     hiddenimports=hiddenimports,
     hookspath=[],
     runtime_hooks=[],
-    # numpy is pulled in only by UnityPy's SpriteHelper (sprite.image), which we never call —
-    # our atlas/font math is pure Pillow now, so we drop it (~15 MB, the biggest single lever).
-    excludes=['fmod_toolkit',    # UnityPy's audio decoder — we never touch audio (~2-4 MB)
-              'numpy'],
+    # numpy is imported only lazily by UnityPy (SpriteHelper, for sprite.image, which we never call),
+    # and our atlas/font math is pure Pillow now — so it is safe to drop (~10 MB, the biggest lever).
+    # fmod_toolkit, by contrast, is NOT droppable: UnityPy's export/__init__ imports it eagerly the
+    # moment we read tex.image, so excluding it crashes at runtime (CI only compiles, never runs).
+    excludes=['numpy'],
     noarchive=False,
 )
 
