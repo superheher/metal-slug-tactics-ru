@@ -1,9 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller: the standalone translator installer (a single file).
+"""PyInstaller: the Windows patcher, built as a one-folder bundle (dist/mst-ru/).
 
-Builds dist/mst-ru-setup(.exe). It bundles ONLY the translation and font sources
-(translation/, font/) plus UnityPy's data (the Unity type database, without which the
-bundles cannot be read). The game's assets are not here — the patch is built on the player's machine.
+Produces dist/mst-ru/mst-ru.exe plus its _internal/ dependencies. Inno Setup
+(packaging/mst-ru.iss) then wraps this folder into a single mst-ru-setup.exe.
+The bundle carries ONLY the translation and font sources (translation/, font/)
+plus UnityPy's data (the Unity type database, without which the bundles cannot be
+read). The game's assets are not here — the patch is built on the player's machine.
 
 Run from the repository root:  pyinstaller packaging/mst-ru.spec
 """
@@ -12,6 +14,7 @@ from PyInstaller.utils.hooks import collect_all
 
 # SPECPATH — the folder of this spec (packaging/); the repository root is one level up.
 ROOT = os.path.dirname(SPECPATH)
+ICON = os.path.join(SPECPATH, 'art', 'mst-ru.ico')   # applied only on Windows builds
 
 datas = [(os.path.join(ROOT, 'translation'), 'translation'),
          (os.path.join(ROOT, 'font'), 'font')]
@@ -49,10 +52,9 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.datas,
     [],
-    name='mst-ru-setup',
+    exclude_binaries=True,
+    name='mst-ru',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -63,4 +65,15 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=(ICON if os.name == 'nt' else None),
+)
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    strip=False,
+    upx=False,
+    upx_exclude=[],
+    name='mst-ru',
 )

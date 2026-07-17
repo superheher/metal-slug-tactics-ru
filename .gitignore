@@ -13,3 +13,11 @@ __pycache__/
 # building the standalone installer (PyInstaller)
 dist/
 *.manifest
+
+# installer art: review previews and unused derivatives
+# (regenerate the wizard image / icon with packaging/make_wizard_images.py)
+packaging/art/preview-*.png
+packaging/art/banner-wide.bmp
+
+# macOS
+.DS_Store

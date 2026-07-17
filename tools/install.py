@@ -156,4 +156,14 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    frozen = getattr(sys, "frozen", False)
+    try:
+        code = main()
+    except SystemExit as exc:
+        code = exc.code
+    if frozen:      # double-clicked or launched by the installer: keep the console open
+        try:
+            input("\nPress Enter to close...")
+        except EOFError:
+            pass
+    sys.exit(code)

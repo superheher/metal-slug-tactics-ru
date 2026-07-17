@@ -1,15 +1,16 @@
-name: build-installers
+name: build-installer
 
-# Builds the standalone installers (mst-ru-setup) for Windows/Linux/macOS.
-# Runs on a version tag push (e.g. v1.0.0) or manually from the Actions tab.
-# On a tag, the built files are attached to the GitHub Release.
+# Builds the self-contained Windows installer (mst-ru-setup.exe): a PyInstaller one-folder
+# bundle wrapped by Inno Setup. Nothing — no Python, no .NET, no libraries — needs to be
+# installed on the target Windows 10/11 machine. The game's assets are not in the build: the
+# patch is built on the player's machine from their own copy of the game.
 #
-# Only the translation and font sources go into the installer — the game's assets
-# are not in the build: the patch is built on the player's machine from their copy of the game.
+# Every run rebuilds the exe and (re)publishes a SINGLE rolling "latest" release, named with the
+# build date — so GitHub Releases always shows exactly one, current, dated download.
 
 on:
   push:
-    tags: ['v*']
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -17,23 +18,7 @@ permissions:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            asset: mst-ru-setup-windows.exe
-            built: dist/mst-ru-setup.exe
-          - os: ubuntu-latest
-            asset: mst-ru-setup-linux
-            built: dist/mst-ru-setup
-          - os: macos-latest
-            asset: mst-ru-setup-macos-arm64
-            built: dist/mst-ru-setup
-          - os: macos-13
-            asset: mst-ru-setup-macos-intel
-            built: dist/mst-ru-setup
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -44,21 +29,40 @@ jobs:
       - name: Install dependencies
         run: python -m pip install --upgrade pip UnityPy numpy Pillow pyinstaller
 
-      - name: Build standalone installer
+      - name: Build date
+        id: meta
+        shell: bash
+        run: echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Build the one-folder bundle (PyInstaller)
         run: pyinstaller --noconfirm packaging/mst-ru.spec
 
-      - name: Name the artifact
-        shell: bash
-        run: cp "${{ matrix.built }}" "${{ matrix.asset }}"
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build the installer (Inno Setup, build date embedded)
+        run: '& "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /DMyBuildDate=${{ steps.meta.outputs.date }} packaging\mst-ru.iss'
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.asset }}
-          path: ${{ matrix.asset }}
+          name: mst-ru-setup
+          path: dist/mst-ru-setup.exe
 
-      - name: Attach to release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: ${{ matrix.asset }}
+      - name: Publish the single rolling "latest" release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          date="${{ steps.meta.outputs.date }}"
+          title="Metal Slug Tactics — русификатор · $date"
+          notes="Автономный установщик под Windows. Дата сборки: **$date**.
+
+          Скачай \`mst-ru-setup.exe\`, закрой игру и запусти — ничего доустанавливать не нужно.
+          Подробности в [README](https://github.com/superheher/metal-slug-tactics-ru#readme)."
+          if gh release view latest >/dev/null 2>&1; then
+            gh release edit latest --title "$title" --notes "$notes" --target "$GITHUB_SHA" --latest
+            gh release upload latest dist/mst-ru-setup.exe --clobber
+          else
+            gh release create latest dist/mst-ru-setup.exe --title "$title" --notes "$notes" --target "$GITHUB_SHA" --latest
+          fi
