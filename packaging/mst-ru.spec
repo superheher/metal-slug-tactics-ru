@@ -1,9 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller: the Windows patcher as a single self-contained exe (onefile).
+"""PyInstaller: the Windows patcher as a single self-contained exe (onefile, windowed).
 
-Produces dist/mst-ru-setup.exe. Double-clicking it unpacks to a temp folder, runs
-the patcher (finds the game, rebuilds the translation from the player's own copy,
-enables Russian), then cleans up — no install, nothing left behind.
+Produces dist/mst-ru-setup.exe. Double-clicking it opens a small window (game folder +
+Install), unpacks to a temp folder, rebuilds the translation from the player's own copy,
+enables Russian, then cleans up — no install, nothing left behind.
 
 The exe carries ONLY the translation and font sources (translation/, font/) plus
 UnityPy's data (the Unity type database). The game's assets are not here.
@@ -18,12 +18,13 @@ ROOT = os.path.dirname(SPECPATH)
 ICON = os.path.join(SPECPATH, 'art', 'mst-ru.ico')   # applied only on Windows builds
 
 datas = [(os.path.join(ROOT, 'translation'), 'translation'),
-         (os.path.join(ROOT, 'font'), 'font')]
+         (os.path.join(ROOT, 'font'), 'font'),
+         (os.path.join(SPECPATH, 'art', 'poster.png'), 'art')]   # shown in the GUI window
 _build_date = os.path.join(ROOT, 'build_date.txt')   # written by CI; shown by the patcher
 if os.path.exists(_build_date):
     datas.append((_build_date, '.'))
 binaries = []
-hiddenimports = ['paths', 'extract', 'validate', 'build', 'spritefont']
+hiddenimports = ['paths', 'install', 'extract', 'validate', 'build', 'spritefont']
 
 # UnityPy drags along native decoders and their data: the Unity type database, the
 # fmod_toolkit audio bridge (libfmod), the texture decoders (astc_encoder/texture2ddecoder/etcpak)
@@ -40,7 +41,7 @@ for _pkg in ('UnityPy', 'fmod_toolkit', 'astc_encoder', 'archspec',
     hiddenimports += _h
 
 a = Analysis(
-    [os.path.join(ROOT, 'tools', 'install.py')],
+    [os.path.join(ROOT, 'tools', 'gui.py')],
     pathex=[os.path.join(ROOT, 'tools')],
     binaries=binaries,
     datas=datas,
@@ -65,7 +66,7 @@ exe = EXE(
     strip=False,
     upx=False,
     runtime_tmpdir=None,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
