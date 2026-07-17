@@ -1,221 +1,204 @@
-# Metal Slug Tactics — Russian translation
+<p align="center"><img src="assets/banner.jpg" alt="Metal Slug Tactics — русификатор" width="900"></p>
 
-A full translation: **5273 strings, ~280k characters** — the entire game, including the campaign
-dialogue. It works as a **native locale**: Russian is added to the game itself as a separate
-language. No BepInEx, no Google Translate, no on-the-fly text interception. Nothing is sent to the
-network.
+**Русский** · [English](README_EN.md)
 
-Built for game version **1.0.4**. Works on **Windows**, **Linux** (Steam/Proton)
-and **macOS** (Wine: Whisky, Bottles, CrossOver).
+# Metal Slug Tactics — русский перевод
 
-> The translation is built from **your** copy of the game, on your own machine. The game's assets
-> are not here and are not sent anywhere — see [Assets and copyright](#assets-and-copyright).
+Полный перевод: **5273 строки, ~280 тысяч знаков** — вся игра, включая диалоги кампании.
+Работает как **родная локализация**: русский добавлен отдельным языком в саму игру.
+Ни BepInEx, ни Google-переводчика, ни перехвата текста на лету. В сеть не уходит ничего.
+
+Собран для версии игры **1.0.4**, под **Windows**-версию игры (единственную ПК-платформу, на
+которой она выходит). На Linux/macOS игру запускают через Proton/Wine — это та же Windows-сборка.
+
+> Перевод собирается из **твоей** копии игры на твоей же машине. Ассеты игры здесь не лежат и
+> никуда не отправляются — см. [«Ассеты и авторские права»](#ассеты-и-авторские-права).
+
+<p align="center"><img src="assets/screenshot-pixel-font.jpg" alt="Плашка «РАЗМЕСТИТЕ СОЛДАТ» в игре" width="820"></p>
+<p align="center"><em>Плакатные надписи — это спрайтовый пиксельный шрифт, а не текст; кириллица дорисована в родном стиле игры.</em></p>
 
 ---
 
-## Installation
+## Установка
 
-### Easy — the ready-made installer (no Python needed)
+### Просто — готовый установщик (без Python и зависимостей)
 
-1. Download the installer for your system from the [**Releases**](../../releases/latest) page:
+1. Скачай **`mst-ru-setup.exe`** со страницы [**Releases**](../../releases/latest). Это автономный
+   установщик под Windows — больше ничего ставить не надо (ни Python, ни .NET).
+2. **Закрой игру** и запусти установщик двойным кликом. Если SmartScreen пишет «Система Windows
+   защитила ваш компьютер / неизвестный издатель» — нажми **«Подробнее» → «Выполнить в любом
+   случае»** (установщик не подписан).
+3. Пройди по мастеру и дай ему отработать — он сам найдёт игру, соберёт перевод из твоей копии и
+   включит русский.
+4. Запусти игру — язык уже русский.
 
-   | System | File |
-   |---|---|
-   | Windows | `mst-ru-setup-windows.exe` |
-   | Linux | `mst-ru-setup-linux` |
-   | macOS (Apple Silicon) | `mst-ru-setup-macos-arm64` |
-   | macOS (Intel) | `mst-ru-setup-macos-intel` |
+В меню «Пуск» добавится ярлык **«Install / update the Russian translation»** (установить/обновить) —
+запускай его заново после каждого обновления игры в Steam. Есть и ярлык **«Revert to English»** (откат).
 
-2. **Close the game** and run the installer:
-   - **Windows** — double-click. If SmartScreen complains about an unknown publisher:
-     “More info” → “Run anyway”.
-   - **Linux / macOS** — `chmod +x mst-ru-setup-*` and run it. On macOS on first launch:
-     right-click the file → “Open” (to bypass Gatekeeper).
-3. Launch the game — the language is already Russian.
-
-The installer finds the game itself, builds the translation from your copy and enables Russian.
-
-### From source (needs Python 3)
+### Из исходников (нужен Python 3)
 
 ```sh
 # Windows
 install.bat
 
-# Linux and macOS
+# Linux и macOS
 ./install.sh
 ```
 
-The wrapper sets up a virtual environment, installs the dependencies, builds and installs the translation.
+Обёртка заведёт виртуальное окружение, поставит зависимости, соберёт и установит перевод.
 
-The game path is found automatically — by Steam libraries and common Wine prefixes.
-If it is not found, set it explicitly:
+Путь к игре ищется сам — по библиотекам Steam и распространённым Wine-префиксам.
+Если не нашёлся, задай явно:
 
 ```sh
 # Windows
-set MST_PATH=C:\path\to\steamapps\common\MST
+set MST_PATH=C:\путь\к\steamapps\common\MST
 install.bat
 
-# Linux and macOS
-MST_PATH="/path/to/steamapps/common/MST" ./install.sh
+# Linux и macOS
+MST_PATH="/путь/к/steamapps/common/MST" ./install.sh
 ```
 
-### After a game update
+### После обновления игры
 
-**After every Steam update — install the translation again.** An update restores the native
-bundles; the installer notices this, refreshes the backup and rebuilds the translation from the new original.
+**После каждого обновления в Steam — поставь перевод заново.** Обновление возвращает родные
+бандлы; установщик это заметит, освежит бэкап и пересоберёт перевод из нового оригинала.
 
-### Rollback
+### Откат
 
 ```sh
-./mst-ru-setup-...   --revert      # the ready-made installer
-./install.sh --revert              # from source (install.bat --revert on Windows)
+./mst-ru-setup-...   --revert      # готовый установщик
+./install.sh --revert              # из исходников (install.bat --revert на Windows)
 ```
 
-Restores the originals from the backup. Then choose English in **НАСТРОЙКИ → Язык**.
+Вернёт оригиналы из бэкапа. Затем выбери English в **НАСТРОЙКИ → Язык**.
 
-### Checking without installing
+### Проверка без установки
 
-`--dry-run` builds and checks the translation, but does not touch the game — handy after edits.
+`--dry-run` собирает и проверяет перевод, но игру не трогает — удобно после правок.
 
 ---
 
-## What is here
+## Что здесь лежит
 
 ```
-translation/ru.json              the translation: string id -> Russian text
-font/tmp_metalslug_7x7.json      22 Cyrillic letters for the TMP font (7×7 grid)
-font/sprite_banner_25x25.json     8 Cyrillic letters for the sprite font (25×25 grid)
-glossary/                        the term glossary and the canon for labels inside placeholders
-tools/                           game discovery, extraction, validation, build, install
-packaging/mst-ru.spec            building the standalone installer (PyInstaller)
-.github/workflows/               CI: building the installers for every OS on a version tag
+translation/ru.json              перевод: id строки -> русский текст
+font/tmp_metalslug_7x7.json      22 кириллические буквы для TMP-шрифта (сетка 7×7)
+font/sprite_banner_25x25.json     8 кириллических букв для спрайтового шрифта (сетка 25×25)
+glossary/                        глоссарий терминов и канон ярлыков внутри плейсхолдеров
+tools/                           поиск игры, извлечение, проверка, сборка, установка
+packaging/mst-ru.spec / .iss     сборка автономного установщика Windows (PyInstaller + Inno Setup)
+packaging/art/                   оформление установщика (постер, иконка)
+.github/workflows/               CI: сборка Windows-установщика и публикация rolling-релиза latest
 ```
 
 ---
 
-## Assets and copyright
+## Ассеты и авторские права
 
-**The game's assets are not here and never will be.** The game, its original text, fonts and graphics
-belong to **SNK, Dotemu and Leikir Studio**. This is an unofficial, non-commercial fan translation,
-in no way affiliated with the rights holders.
+**Ассетов игры здесь нет и не будет.** Игра, её оригинальный текст, шрифты и графика принадлежат
+**SNK, Dotemu и Leikir Studio**. Это неофициальный некоммерческий фанатский перевод, никак не
+связанный с правообладателями.
 
-The localized bundles are **not distributed**: they are built on the player's machine from their own
-copy of the game (Steam appid `1590760`). The `backup/` and `build/` folders never end up in git.
-Use the translation only with a legally purchased copy of Metal Slug Tactics.
+Локализованные бандлы **не распространяются**: они собираются на машине игрока из его собственной
+копии игры (Steam appid `1590760`). Папки `backup/` и `build/` в git не попадают. Пользуйся
+переводом только с легально приобретённой копией Metal Slug Tactics.
 
-The code and translation sources are under [MIT](LICENSE).
-
----
-
-## How it works
-
-### Text
-
-The game has its own localization system (Unity Localization) with nine languages; Russian is
-not among them, and a tenth cannot be added. So Russian took over the slot of **Brazilian
-Portuguese** — a language you almost certainly do not need. English and all the rest are left
-untouched: in the `НАСТРОЙКИ → Язык` menu a «Русский» item appears, and you can switch between
-it and English.
-
-The key thing that made the swap possible: the Addressables catalog **stores no bundle
-checksums**, so the string table can be rebuilt and the game will not notice.
-
-Three non-obvious facts, learned the hard way:
-
-- `Save/Options` → `Locale.option` takes the **locale's asset name**, not a code:
-  `"Portuguese (Brazil) (pt-BR)"`, not `"pt-BR"`. With a code the game silently ignores the setting.
-- The language name in the list is taken from the `UI/240000458967474176` string inside **the
-  table itself** (in the English one it is `English`), not from the locale object's `m_LocaleName`
-  field — the game does not read that.
-- The `UI/167188675005767680` string = `{Platform.IsConsole:{Locale}|System ({Locale})}` labels
-  the system-language item. In the Russian table it is replaced with `{Locale}`, otherwise the
-  item is called «Системный (Русский)».
-
-### Banner captions — a separate story
-
-The big captions on the black bar — `ХОД ИГРОКА`, `ХОД ПРОТИВНИКА`, `РАЗМЕСТИТЕ БОЙЦОВ`,
-`ПОБЕДА`, `ПОРАЖЕНИЕ` — are drawn **not as text but as sprites**: the `SpriteText` component
-splits a string into characters and pulls a separate 25×25 image for each one from the
-`SpriteFont` table. There were no Cyrillic codes there — hence an empty black bar instead of a
-caption. Editing the TextMeshPro fonts is useless here in principle.
-
-Only five captions are drawn with sprites, and English needs only the letters
-`A C D E F I L M N O P R S T U V Y` in them. That means `G J Q W Z !` and the digits sit in the
-set as dead weight — their pixels are the ones repainted for Cyrillic. English stays fully intact.
-
-- **12 letters** (`А В Е К М Н О Р С Т Х`, and also `З` → the digit `3`) **reference Latin sprites** —
-  the shapes coincide, not a single pixel is touched.
-- **8 letters** (`Б Г Д Ж И Й П Ц`) are redrawn from scratch. `И` is a mirrored `N`, reflected pixel for pixel.
-
-The letter recipe is reverse-engineered from the originals and reproduces `H`, `T`, `E`, `F` **pixel for pixel**:
-
-- fill — five gradient bands of two rows each: `(248,208,48) → (248,144,24) → (248,104,0) → (240,48,0) → (176,0,0)`;
-- between the bands — **dithering**: two rows of a checkerboard, dark colour when `(row + column)` is even;
-- shadow `(120,0,0)` — along the **top and left** edge of the fill, not a ring;
-- white outline `(248,248,248)` — 1px outward;
-- black border — a ring around the outline **plus** a drop shadow offset down-right.
+Код и исходники перевода — под [MIT](LICENSE).
 
 ---
 
-## How to edit the translation
+## Как это устроено
 
-1. Open `translation/ru.json` — a flat dictionary `"string id": "Russian text"`.
-2. Edit the text. **Do not touch** the paths inside `{...}` or the tags `<...>` — the output will
-   break. But the text AFTER the colon inside a placeholder (`{Move:перемещает}`) is exactly what the
-   player sees, so it can and should be edited.
-3. `./install.sh` (or `install.bat`) — checks the markup integrity, rebuilds and installs.
-   Want to only check — add `--dry-run`.
+### Текст
 
-## How to edit the letters
+У игры своя система локализации (Unity Localization) с девятью языками; русского среди них нет,
+а добавить десятый нельзя. Поэтому русский занял слот **бразильского португальского** — языка,
+который тебе точно не нужен. Английский и все остальные остались нетронутыми: в меню
+`НАСТРОЙКИ → Язык` появляется пункт «Русский», и между ним и английским можно переключаться.
 
-The shapes live in `font/` as plain text: `#` is ink, `.` is empty.
-Edit the grid — the installer rebuilds. The outline, shadow, border and the gradient with
-dithering are added automatically by the recipe.
+Ключевое, что сделало подмену возможной: каталог Addressables **не хранит контрольных сумм
+бандлов**, поэтому таблицу строк можно пересобрать, и игра не заметит.
 
-## Term decisions
+Три неочевидных факта, добытых опытом:
+
+- `Save/Options` → `Locale.option` принимает **имя ассета локали**, а не код:
+  `"Portuguese (Brazil) (pt-BR)"`, а не `"pt-BR"`. С кодом игра молча игнорирует настройку.
+- Название языка в списке берётся из строки `UI/240000458967474176` внутри **самой таблицы**
+  (в английской там `English`), а не из поля `m_LocaleName` объекта локали — его игра не читает.
+- Строка `UI/167188675005767680` = `{Platform.IsConsole:{Locale}|System ({Locale})}` подписывает
+  пункт системного языка. В русской таблице заменена на `{Locale}`, иначе пункт называется
+  «Системный (Русский)».
+
+### Плакатные надписи — отдельная история
+
+Большие надписи на чёрной полосе — `ХОД ИГРОКА`, `ХОД ПРОТИВНИКА`, `РАЗМЕСТИТЕ БОЙЦОВ`,
+`ПОБЕДА`, `ПОРАЖЕНИЕ` — рисуются **не текстом, а спрайтами**: компонент `SpriteText` разбивает
+строку на символы и для каждого достаёт отдельную картинку 25×25 из таблицы `SpriteFont`.
+Кириллических кодов там не было — отсюда пустая чёрная полоса вместо надписи.
+Правка шрифтов TextMeshPro тут бесполезна в принципе.
+
+Спрайтами рисуются всего пять надписей, и английскому в них нужны только буквы
+`A C D E F I L M N O P R S T U V Y`. Значит `G J Q W Z !` и цифры лежат в наборе мёртвым грузом —
+их пиксели и перерисованы под кириллицу. Английский цел полностью.
+
+- **12 букв** (`А В Е К М Н О Р С Т Х`, а также `З` → цифра `3`) **ссылаются на латинские спрайты** —
+  формы совпадают, ни одного пикселя не тронуто.
+- **8 букв** (`Б Г Д Ж И Й П Ц`) нарисованы заново. `И` — зеркальная `N`, отражённая пиксель в пиксель.
+
+Рецепт буквы вытащен из оригиналов и воспроизводит `H`, `T`, `E`, `F` **пиксель в пиксель**:
+
+- заливка — пять полос градиента по две строки: `(248,208,48) → (248,144,24) → (248,104,0) → (240,48,0) → (176,0,0)`;
+- между полосами — **дизеринг**: две строки шахматки, тёмный цвет при чётном `(строка + столбец)`;
+- тень `(120,0,0)` — по **верхней и левой** кромке заливки, не кольцом;
+- белая обводка `(248,248,248)` — 1px наружу;
+- чёрный кант — кольцо вокруг обводки **плюс** отброшенная тень со сдвигом вправо-вниз.
+
+---
+
+## Как править перевод
+
+1. Открой `translation/ru.json` — плоский словарь `"id строки": "русский текст"`.
+2. Правь текст. **Не трогай** пути внутри `{...}` и теги `<...>` — сломается вывод.
+   А вот текст ПОСЛЕ двоеточия внутри плейсхолдера (`{Move:перемещает}`) игрок как раз видит,
+   его править можно и нужно.
+3. `./install.sh` (или `install.bat`) — проверит целостность разметки, пересоберёт и поставит.
+   Хочешь только проверить — добавь `--dry-run`.
+
+## Как править буквы
+
+Формы лежат в `font/` обычным текстом: `#` — краска, `.` — пусто.
+Правишь сетку — установщик пересоберёт. Обводка, тень, кант и градиент с дизерингом
+добавятся сами по рецепту.
+
+## Принятые решения по терминам
 
 - Peregrine Falcons / Falcons → **«Сапсаны»** · SPARROWS → **«Воробьи»**
 - unit → **боец** · Sync → **синхроудар** · World Government → **Всемирное правительство**
-- `HP`, `DMG`, `ADR`, `XP`, `Init` stay in Latin — these are labels in cramped UI spots.
-- `WASD` stays `WASD` (the old fan translation had «Ц/Ф/Ы/В» — the keys are physically the same, after all).
+- `HP`, `DMG`, `ADR`, `XP`, `Init` остаются латиницей — это метки в тесных местах интерфейса.
+- `WASD` остаётся `WASD` (в старом фан-переводе было «Ц/Ф/Ы/В» — клавиши-то физически те же).
 
-Details are in `glossary/`.
+Подробности — в `glossary/`.
 
 ---
 
-## Building the installer (for maintainers)
+## Сборка установщика (для мейнтейнеров)
+
+На **Windows**, с установленным [Inno Setup 6](https://jrsoftware.org/isdl.php):
 
 ```sh
 pip install UnityPy numpy Pillow pyinstaller
-pyinstaller packaging/mst-ru.spec        # -> dist/mst-ru-setup(.exe)
+python packaging/make_wizard_images.py   # только если менял арт в packaging/art/
+pyinstaller packaging/mst-ru.spec        # -> dist/mst-ru/ (автономный onedir-бандл)
+iscc packaging/mst-ru.iss                # -> dist/mst-ru-setup.exe
 ```
 
-CI (`.github/workflows/build-installers.yml`) builds the installers for Windows, Linux and macOS
-and attaches them to the release. To publish a version:
+PyInstaller собирает бандл; Inno Setup заворачивает его в единый `mst-ru-setup.exe`. CI
+(`.github/workflows/build-installers.yml`) делает и то и другое на Windows-раннере и публикует exe
+как единственный «плавающий» релиз **latest** с датой сборки. Чтобы запустить сборку — запушь тег
+версии или запусти workflow вручную во вкладке Actions:
 
 ```sh
 git tag v1.0.4
 git push origin v1.0.4
 ```
-
----
-
-## English
-
-Full Russian translation of **Metal Slug Tactics** (5273 strings, the whole game including the
-campaign dialogue). It installs as a **native locale** — Russian is added as a language inside
-the game itself, taking the unused Brazilian-Portuguese slot. No BepInEx, no on-the-fly machine
-translation, nothing sent to the network. Works on **Windows**, **Linux** (Steam/Proton) and
-**macOS** (Wine: Whisky, Bottles, CrossOver).
-
-**No game assets are shipped.** The localized bundles are built on your machine from your own copy
-of the game. The game and its original text/art are © SNK, Dotemu and Leikir Studio; this is an
-unofficial, non-commercial fan translation.
-
-**Install (easy):** download the installer for your OS from [Releases](../../releases/latest)
-(`mst-ru-setup-windows.exe`, `-linux`, `-macos-arm64`, `-macos-intel`), close the game, run it,
-launch the game. No Python required.
-
-**Install (from source, needs Python 3):** run `install.bat` (Windows) or `./install.sh`
-(Linux/macOS). Set `MST_PATH` if the game isn't found automatically. Re-run after every Steam
-update. Revert with `--revert`. The tooling and translation sources are MIT-licensed ([LICENSE](LICENSE)).

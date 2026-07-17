@@ -35,4 +35,4 @@ A full install — the same script without `--dry-run`.
 ## How it works
 
 The technical underside (how the translation became a native locale, how the banner letters are drawn)
-is in the [README](README.md#how-it-works).
+is in the [README](README_EN.md#how-it-works) ([Русский](README.md#как-это-устроено)).
